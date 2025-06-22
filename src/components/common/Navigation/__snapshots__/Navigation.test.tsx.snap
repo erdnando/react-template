@@ -1,0 +1,54 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Navigation Component matches snapshot 1`] = `
+<DocumentFragment>
+  <nav
+    class="navigation"
+  >
+    <ul>
+      <li>
+        <a
+          href="/"
+        >
+          Home
+        </a>
+      </li>
+      <li>
+        <a
+          href="/catalogs"
+        >
+          Catalogs
+        </a>
+      </li>
+      <li>
+        <a
+          href="/users"
+        >
+          Users
+        </a>
+      </li>
+      <li>
+        <a
+          href="/login"
+        >
+          Login
+        </a>
+      </li>
+      <li>
+        <a
+          href="/reset-password"
+        >
+          Reset Password
+        </a>
+      </li>
+      <li>
+        <a
+          href="/sign-out"
+        >
+          Sign Out
+        </a>
+      </li>
+    </ul>
+  </nav>
+</DocumentFragment>
+`;
