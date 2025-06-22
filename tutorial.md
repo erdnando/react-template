@@ -607,3 +607,6 @@ export default Tasks;
 
 
 **¡Con estos pasos puedes crear y mantener tus propios módulos en este template!**
+
+docker build -t react-template:v1 . 
+docker run -it --rm -p 8080:80 react-template:v1 
