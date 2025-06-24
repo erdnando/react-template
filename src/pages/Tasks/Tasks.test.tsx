@@ -23,7 +23,7 @@ const renderWithProviders = (component: React.ReactElement) => {
 describe('Tasks Component', () => {
   test('renders Tasks page', () => {
     renderWithProviders(<Tasks />);
-    const headingElement = screen.getByRole('heading', { name: /Tasks/i });
+    const headingElement = screen.getByRole('heading', { name: /Task Management/i });
     expect(headingElement).toBeInTheDocument();
   });
 
@@ -31,10 +31,8 @@ describe('Tasks Component', () => {
     renderWithProviders(<Tasks />);
     expect(screen.getByLabelText(/Title/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Description/i)).toBeInTheDocument();
-    const addOrUpdateButton =
-        screen.queryByRole('button', { name: /Add Task/i }) ||
-        screen.queryByRole('button', { name: /Update/i });
-    expect(addOrUpdateButton).toBeInTheDocument();
+    const addButtons = screen.getAllByRole('button', { name: /Add Task/i });
+    expect(addButtons.length).toBeGreaterThan(0);
   });
 
   // Puedes agregar más pruebas según la lógica de tu componente

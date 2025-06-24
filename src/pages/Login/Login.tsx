@@ -35,11 +35,11 @@ const Login: React.FC = () => {
 
   return (
     <>
-      <Avatar sx={{ m: 1, bgcolor: 'primary.main', width: 56, height: 56 }}>
-        <LockOutlinedIcon />
+      <Avatar sx={{ m: 1, bgcolor: 'primary.main', width: 48, height: 48 }}>
+        <LockOutlinedIcon sx={{ fontSize: '1.5rem' }} />
       </Avatar>
       
-      <Typography component="h1" variant="h4" gutterBottom sx={{ fontWeight: 'bold' }}>
+      <Typography component="h1" variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
         Welcome Back
       </Typography>
       
@@ -67,6 +67,7 @@ const Login: React.FC = () => {
           onChange={(e) => setEmail(e.target.value)}
           disabled={loading}
           variant="outlined"
+          size="small"
         />
         
         <TextField
@@ -82,6 +83,7 @@ const Login: React.FC = () => {
           onChange={(e) => setPassword(e.target.value)}
           disabled={loading}
           variant="outlined"
+          size="small"
         />
 
         <Button
@@ -89,10 +91,10 @@ const Login: React.FC = () => {
           fullWidth
           variant="contained"
           sx={{ 
-            mt: 3, 
+            mt: 2.5, 
             mb: 2, 
-            height: 48,
-            fontSize: '1.1rem',
+            height: 42,
+            fontSize: '0.9rem',
             fontWeight: 'bold'
           }}
           disabled={loading}

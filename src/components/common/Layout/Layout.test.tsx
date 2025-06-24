@@ -6,6 +6,13 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { store } from '../../../store/store';
 import Layout from './Layout';
 
+// Mock the useAuth hook
+jest.mock('../../../hooks/useAuth', () => ({
+  useAuth: () => ({
+    logout: jest.fn(),
+  }),
+}));
+
 const theme = createTheme();
 
 const renderWithProviders = (component: React.ReactElement) => {

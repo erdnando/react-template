@@ -29,7 +29,7 @@ const Home: React.FC = () => {
       title: 'Total Users',
       value: '1,234',
       change: '+12%',
-      icon: <PeopleIcon sx={{ fontSize: 40 }} />,
+      icon: <PeopleIcon sx={{ fontSize: 32 }} />,
       color: 'primary.main',
       path: '/users'
     },
@@ -37,7 +37,7 @@ const Home: React.FC = () => {
       title: 'Active Catalogs',
       value: '45',
       change: '+5%',
-      icon: <InventoryIcon sx={{ fontSize: 40 }} />,
+      icon: <InventoryIcon sx={{ fontSize: 32 }} />,
       color: 'secondary.main',
       path: '/catalogs'
     },
@@ -45,7 +45,7 @@ const Home: React.FC = () => {
       title: 'Growth Rate',
       value: '23.5%',
       change: '+2.1%',
-      icon: <TrendingUpIcon sx={{ fontSize: 40 }} />,
+      icon: <TrendingUpIcon sx={{ fontSize: 32 }} />,
       color: 'success.main',
       path: '/analytics'
     },
@@ -53,7 +53,7 @@ const Home: React.FC = () => {
       title: 'Dashboard Views',
       value: '8,765',
       change: '+18%',
-      icon: <DashboardIcon sx={{ fontSize: 40 }} />,
+      icon: <DashboardIcon sx={{ fontSize: 32 }} />,
       color: 'warning.main',
       path: '/dashboard'
     },
@@ -62,10 +62,10 @@ const Home: React.FC = () => {
   return (
     <Container maxWidth="lg">
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h3" component="h1" gutterBottom>
+        <Typography variant="h4" component="h1" gutterBottom>
           Welcome{isAuthenticated && user ? `, ${user.username}` : ''}!
         </Typography>
-        <Typography variant="h6" color="text.secondary" gutterBottom>
+        <Typography variant="body1" color="text.secondary" gutterBottom>
           Modern React Template Dashboard
         </Typography>
         {!isAuthenticated && (
@@ -78,6 +78,7 @@ const Home: React.FC = () => {
             />
             <Button 
               variant="contained" 
+              size="small"
               onClick={() => navigate('/login')}
               sx={{ ml: 1 }}
             >
@@ -116,15 +117,15 @@ const Home: React.FC = () => {
                 onClick={() => navigate(card.path)}
               >
                 <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Avatar sx={{ bgcolor: card.color, mr: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                    <Avatar sx={{ bgcolor: card.color, mr: 1.5, width: 36, height: 36 }}>
                       {card.icon}
                     </Avatar>
                     <Box>
-                      <Typography variant="h4" component="div">
+                      <Typography variant="h5" component="div" sx={{ fontSize: '1.25rem' }}>
                         {card.value}
                       </Typography>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem' }}>
                         {card.title}
                       </Typography>
                     </Box>

@@ -22,14 +22,22 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
-  SelectChangeEvent
+  SelectChangeEvent,
+  Container,
+  Chip,
+  Fab,
+  useTheme,
+  useMediaQuery
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
 
 const Tasks: React.FC = () => {
   const tasks = useSelector((state: RootState) => state.tasks.tasks);
   const dispatch = useDispatch();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const [form, setForm] = useState({
     title: '',
@@ -51,6 +59,25 @@ const Tasks: React.FC = () => {
 
   // Validations
   const [errors, setErrors] = useState<{ title?: string; description?: string }>({});
+
+  // Task statistics
+  const taskStats = {
+    total: tasks.length,
+    completed: tasks.filter(t => t.completed).length,
+    pending: tasks.filter(t => !t.completed).length,
+    highPriority: tasks.filter(t => t.priority === 'high').length,
+  };
+
+  const getPriorityColor = (priority: string): "primary" | "warning" | "error" => {
+    switch (priority) {
+      case 'high':
+        return 'error';
+      case 'medium':
+        return 'warning';
+      default:
+        return 'primary';
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -138,97 +165,241 @@ const Tasks: React.FC = () => {
   };
 
   return (
-    <Box sx={{ maxWidth: 600, mx: 'auto' }}>
-      <Typography variant="h4" gutterBottom>
-        Tasks
-      </Typography>
-      <Paper sx={{ p: 2, mb: 3 }}>
+    <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h5" component="h1" gutterBottom>
+          Task Management
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Create, manage and track your tasks efficiently
+        </Typography>
+      </Box>
+
+      {/* Stats Cards */}
+      <Box 
+        sx={{ 
+          display: 'grid', 
+          gridTemplateColumns: { 
+            xs: 'repeat(2, 1fr)', 
+            sm: 'repeat(2, 1fr)', 
+            md: 'repeat(4, 1fr)' 
+          }, 
+          gap: { xs: 1.5, md: 2 }, 
+          mb: 3 
+        }}
+      >
+        <Card>
+          <CardContent sx={{ py: 1.5 }}>
+            <Typography color="textSecondary" gutterBottom sx={{ fontSize: '0.8125rem' }}>
+              Total Tasks
+            </Typography>
+            <Typography variant="h5" sx={{ fontSize: '1.5rem' }}>
+              {taskStats.total}
+            </Typography>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent sx={{ py: 1.5 }}>
+            <Typography color="textSecondary" gutterBottom sx={{ fontSize: '0.8125rem' }}>
+              Completed
+            </Typography>
+            <Typography variant="h5" color="success.main" sx={{ fontSize: '1.5rem' }}>
+              {taskStats.completed}
+            </Typography>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent sx={{ py: 1.5 }}>
+            <Typography color="textSecondary" gutterBottom sx={{ fontSize: '0.8125rem' }}>
+              Pending
+            </Typography>
+            <Typography variant="h5" color="warning.main" sx={{ fontSize: '1.5rem' }}>
+              {taskStats.pending}
+            </Typography>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent sx={{ py: 1.5 }}>
+            <Typography color="textSecondary" gutterBottom sx={{ fontSize: '0.8125rem' }}>
+              High Priority
+            </Typography>
+            <Typography variant="h5" color="error.main" sx={{ fontSize: '1.5rem' }}>
+              {taskStats.highPriority}
+            </Typography>
+          </CardContent>
+        </Card>
+      </Box>
+
+      {/* Task Form */}
+      <Paper sx={{ p: { xs: 1, md: 1.5 }, mb: 3 }}>
+        <Typography variant="h6" gutterBottom sx={{ fontSize: '1.1rem', fontWeight: 600 }}>
+          {editingId ? 'Edit Task' : 'Add New Task'}
+        </Typography>
         <form onSubmit={handleSubmit}>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-            <TextField
-              name="title"
-              label="Title"
-              value={form.title}
-              onChange={handleInputChange}
-              required
-              size="small"
-              sx={{ flex: 1 }}
-              error={!!errors.title}
-              helperText={errors.title}
-            />
-            <TextField
-              name="description"
-              label="Description"
-              value={form.description}
-              onChange={handleInputChange}
-              required
-              size="small"
-              sx={{ flex: 2 }}
-              error={!!errors.description}
-              helperText={errors.description}
-            />
-            <Select
-              name="priority"
-              value={form.priority}
-              onChange={handleSelectChange}
-              size="small"
-              sx={{ minWidth: 100 }}
-            >
-              <MenuItem value="low">Low</MenuItem>
-              <MenuItem value="medium">Medium</MenuItem>
-              <MenuItem value="high">High</MenuItem>
-            </Select>
-            <Button type="submit" variant="contained" color="primary">
-              {editingId !== null ? 'Update' : 'Add Task'}
-            </Button>
-            {editingId !== null && (
-              <Button
-                type="button"
-                variant="outlined"
-                color="secondary"
-                onClick={() => {
-                  setEditingId(null);
-                  setForm({ title: '', description: '', priority: 'medium' });
-                  setErrors({});
-                }}
+          <Stack spacing={2}>
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: { xs: 'column', md: 'row' },
+              gap: 2
+            }}>
+              <TextField
+                name="title"
+                label="Title"
+                value={form.title}
+                onChange={handleInputChange}
+                required
+                size="small"
+                sx={{ flex: 1 }}
+                error={!!errors.title}
+                helperText={errors.title}
+              />
+              <TextField
+                name="description"
+                label="Description"
+                value={form.description}
+                onChange={handleInputChange}
+                required
+                size="small"
+                sx={{ flex: 2 }}
+                error={!!errors.description}
+                helperText={errors.description}
+              />
+              <Select
+                name="priority"
+                value={form.priority}
+                onChange={handleSelectChange}
+                size="small"
+                sx={{ minWidth: { xs: '100%', md: 120 } }}
               >
-                Cancel
+                <MenuItem value="low">Low</MenuItem>
+                <MenuItem value="medium">Medium</MenuItem>
+                <MenuItem value="high">High</MenuItem>
+              </Select>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+              {editingId && (
+                <Button
+                  variant="outlined"
+                  onClick={() => {
+                    setEditingId(null);
+                    setForm({ title: '', description: '', priority: 'medium' });
+                    setErrors({});
+                  }}
+                  size="small"
+                >
+                  Cancel
+                </Button>
+              )}
+              <Button
+                type="submit"
+                variant="contained"
+                size="small"
+              >
+                {editingId ? 'Update Task' : 'Add Task'}
               </Button>
-            )}
+            </Box>
           </Stack>
         </form>
       </Paper>
-      <Stack spacing={2}>
+
+      {/* Tasks List - Desktop Cards */}
+      <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+        <Stack spacing={1.5}>
+          {tasks.map((task: Task) => (
+            <Card key={task.id} variant="outlined">
+              <CardContent sx={{ pb: 1 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                  <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 600 }}>
+                    {task.title}
+                  </Typography>
+                  <Chip
+                    label={task.priority}
+                    color={getPriorityColor(task.priority)}
+                    size="small"
+                    sx={{ fontSize: '0.75rem' }}
+                  />
+                </Box>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+                  {task.description}
+                </Typography>
+              </CardContent>
+              <CardActions sx={{ px: 2, py: 1 }}>
+                <IconButton color="primary" onClick={() => handleEdit(task)} size="small">
+                  <EditIcon sx={{ fontSize: '1.1rem' }} />
+                </IconButton>
+                <IconButton color="error" onClick={() => handleDeleteClick(task.id)} size="small">
+                  <DeleteIcon sx={{ fontSize: '1.1rem' }} />
+                </IconButton>
+              </CardActions>
+            </Card>
+          ))}
+        </Stack>
+      </Box>
+
+      {/* Tasks List - Mobile Cards */}
+      <Box sx={{ display: { xs: 'block', md: 'none' } }}>
         {tasks.map((task: Task) => (
-          <Card key={task.id} variant="outlined">
-            <CardContent>
-              <Typography variant="h6" component="div" fontWeight="bold">
-                {task.title}
-              </Typography>
-              <Typography color="text.secondary" sx={{ mb: 1 }}>
+          <Card key={task.id} sx={{ mb: 2 }}>
+            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: '0.95rem', flex: 1 }}>
+                  {task.title}
+                </Typography>
+                <Chip
+                  label={task.priority}
+                  color={getPriorityColor(task.priority)}
+                  size="small"
+                  sx={{ fontSize: '0.75rem', ml: 1 }}
+                />
+              </Box>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem', mb: 2 }}>
                 {task.description}
               </Typography>
-              <Typography variant="body2">
-                Priority: <b>{task.priority}</b>
-              </Typography>
+              <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
+                <IconButton 
+                  onClick={() => handleEdit(task)}
+                  color="primary"
+                  size="small"
+                >
+                  <EditIcon sx={{ fontSize: '1.1rem' }} />
+                </IconButton>
+                <IconButton 
+                  onClick={() => handleDeleteClick(task.id)}
+                  color="error" 
+                  size="small"
+                >
+                  <DeleteIcon sx={{ fontSize: '1.1rem' }} />
+                </IconButton>
+              </Box>
             </CardContent>
-            <CardActions>
-              <IconButton color="primary" onClick={() => handleEdit(task)}>
-                <EditIcon />
-              </IconButton>
-              <IconButton color="error" onClick={() => handleDeleteClick(task.id)}>
-                <DeleteIcon />
-              </IconButton>
-            </CardActions>
           </Card>
         ))}
-      </Stack>
-      {/* Snackbar para feedback visual */}
+      </Box>
+
+      {/* Mobile FAB */}
+      <Fab
+        color="primary"
+        aria-label="add task"
+        sx={{
+          position: 'fixed',
+          bottom: 16,
+          right: 16,
+          display: { xs: 'flex', md: 'none' }
+        }}
+        onClick={() => {
+          setEditingId(null);
+          setForm({ title: '', description: '', priority: 'medium' });
+          setErrors({});
+        }}
+      >
+        <AddIcon />
+      </Fab>
+
+      {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={2500}
+        autoHideDuration={6000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
         <Alert
           onClose={() => setSnackbar({ ...snackbar, open: false })}
@@ -238,8 +409,19 @@ const Tasks: React.FC = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-      {/* Diálogo de confirmación para eliminar */}
-      <Dialog open={dialogOpen} onClose={handleDeleteCancel}>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={dialogOpen}
+        onClose={handleDeleteCancel}
+        fullScreen={isMobile}
+        PaperProps={{
+          sx: {
+            m: { xs: 1, sm: 3 },
+            width: { xs: 'calc(100% - 16px)', sm: '100%' }
+          }
+        }}
+      >
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
           <DialogContentText>
@@ -247,13 +429,15 @@ const Tasks: React.FC = () => {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleDeleteCancel}>Cancel</Button>
-          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+          <Button onClick={handleDeleteCancel} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleDeleteConfirm} color="error" autoFocus>
             Delete
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </Container>
   );
 };
 

@@ -36,8 +36,8 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../../store/store';
 import { useAuth } from '../../../hooks/useAuth';
 
-const drawerWidth = 220;
-const collapsedDrawerWidth = 56;
+const drawerWidth = 240;
+const collapsedDrawerWidth = 64;
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -121,20 +121,66 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const drawer = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Logo and project name in sidebar */}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          px: isCollapsed ? 1 : 2,
+          py: 2,
+          minHeight: 64,
+          bgcolor: 'primary.main',
+          color: 'primary.contrastText',
+        }}
+      >
+        <Box
+          sx={{
+            width: 40,
+            height: 40,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 2,
+            bgcolor: 'white',
+            mr: isCollapsed ? 0 : 2,
+          }}
+        >
+          <img
+            src={process.env.PUBLIC_URL + '/imgs/logo.png'}
+            alt="Logo"
+            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+          />
+        </Box>
+        {!isCollapsed && (
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: 700,
+              fontSize: '1.1rem',
+              color: 'primary.contrastText',
+            }}
+          >
+            React Admin
+          </Typography>
+        )}
+      </Box>
+
+      <Divider />
+
       {/* Navigation items */}
-      <List sx={{ flexGrow: 1, pt: 2.5, px: 0.5 }}>
+      <List sx={{ flexGrow: 1, pt: 2 }}>
         {menuItems.map((item) => (
           <ListItem key={item.text} disablePadding sx={{ display: 'block' }}>
             <ListItemButton
               component={Link}
               to={item.path}
               sx={{
-                minHeight: 36,
+                minHeight: 48,
                 justifyContent: isCollapsed ? 'center' : 'initial',
-                px: isCollapsed ? 0.75 : 1.25,
-                mx: 0.5,
-                borderRadius: 1,
-                mb: 0.2,
+                px: 2.5,
+                mx: 1,
+                borderRadius: 2,
+                mb: 0.5,
                 '&:hover': {
                   bgcolor: 'primary.light',
                   color: 'primary.contrastText',
@@ -151,12 +197,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <ListItemIcon
                 sx={{
                   minWidth: 0,
-                  mr: isCollapsed ? 'auto' : 2,
+                  mr: isCollapsed ? 'auto' : 3,
                   justifyContent: 'center',
                   color: location.pathname === item.path ? 'primary.contrastText' : 'primary.main',
-                  '& .MuiSvgIcon-root': {
-                    fontSize: '1.1rem',
-                  },
                 }}
               >
                 {item.icon}
@@ -167,7 +210,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   opacity: isCollapsed ? 0 : 1,
                   '& .MuiListItemText-primary': {
                     fontWeight: location.pathname === item.path ? 600 : 500,
-                    fontSize: '0.8125rem',
                   },
                 }}
               />
@@ -177,19 +219,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </List>
 
       {/* Collapse button */}
-      <Box sx={{ p: 0.5, display: { xs: 'none', md: 'block' } }}>
+      <Box sx={{ p: 1, display: { xs: 'none', md: 'block' } }}>
         <IconButton
           onClick={handleDrawerCollapse}
-          size="small"
           sx={{
             width: '100%',
-            borderRadius: 0.75,
-            py: 0.4,
+            borderRadius: 2,
+            py: 1,
             '&:hover': {
               bgcolor: 'action.hover',
-            },
-            '& .MuiSvgIcon-root': {
-              fontSize: '0.9rem',
             },
           }}
         >
@@ -217,11 +255,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         }}
       >
         <Toolbar sx={{
-          minHeight: 52,
+          minHeight: 64,
           display: 'flex',
           alignItems: 'center',
-          px: 1.25,
-          gap: { xs: 0, md: 1.25 },
+          px: 2,
+          gap: 2,
         }}>
           {/* Mobile menu button */}
           <IconButton
@@ -229,14 +267,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             aria-label="open drawer"
             edge="start"
             onClick={handleDrawerToggle}
-            size="small"
-            sx={{ 
-              display: { md: 'none' },
-              mr: 1,
-              '& .MuiSvgIcon-root': {
-                fontSize: '1.1rem',
-              },
-            }}
+            sx={{ display: { md: 'none' } }}
           >
             <MenuIcon />
           </IconButton>
@@ -244,17 +275,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           {/* Logo */}
           <Box
             sx={{
-              width: 28,
-              height: 28,
+              width: 40,
+              height: 40,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              borderRadius: 1,
+              borderRadius: 2,
               boxShadow: 1,
               bgcolor: 'background.default',
               overflow: 'hidden',
               flexShrink: 0,
-              mr: { xs: 0, md: 1.25 },
             }}
           >
             <img
@@ -269,10 +299,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <Typography 
             variant="h6" 
             sx={{ 
-              fontWeight: 600,
+              fontWeight: 700,
               color: 'text.primary',
-              fontSize: '0.9rem',
-              letterSpacing: '0.15px',
+              fontSize: '1.1rem',
+              letterSpacing: '0.5px',
               display: { xs: 'none', md: 'block' },
               flexShrink: 0,
             }}
@@ -281,13 +311,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </Typography>
 
           {/* Breadcrumbs */}
-          <Box  sx={{ 
+          <Box sx={{ 
             display: { xs: 'none', sm: 'flex' }, 
             alignItems: 'center',
             flex: 1,
             ml: { 
-              sm: 4,
-              md: isCollapsed ? 5.5 : 8
+              md: isCollapsed ? 2 : 4
             },
             transition: theme.transitions.create(['margin-left'], {
               easing: theme.transitions.easing.sharp,
@@ -304,7 +333,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   color: 'text.secondary', 
                   textDecoration: 'none', 
                   fontWeight: 500,
-                  fontSize: '0.8125rem',
                   '&:hover': {
                     color: 'primary.main'
                   }
@@ -327,16 +355,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                           display: 'flex',
                           alignItems: 'center',
                           cursor: 'pointer',
-                          px: 0.75,
-                          py: 0.375,
-                          borderRadius: 0.75,
-                          minHeight: 28,
+                          px: 1,
+                          py: 0.5,
+                          borderRadius: 1,
+                          minHeight: 32,
                           '&:hover': {
                             bgcolor: 'action.hover',
                           }
                         }}
                       >
-                        <Box sx={{ mr: 0.75, color: 'primary.main', fontSize: '1rem' }}>
+                        <Box sx={{ mr: 1, color: 'primary.main', fontSize: '1.1rem' }}>
                           {getCurrentModule().icon}
                         </Box>
                         <Typography 
@@ -344,13 +372,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             textTransform: 'capitalize',
                             fontWeight: 600,
                             color: 'text.primary',
-                            mr: 0.5,
-                            fontSize: '0.8125rem',
+                            mr: 0.5
                           }}
                         >
                           {getCurrentModule().text}
                         </Typography>
-                        <Box sx={{ color: 'text.secondary', fontSize: '0.6rem', lineHeight: 1 }}>
+                        <Box sx={{ color: 'text.secondary', fontSize: '0.7rem', lineHeight: 1 }}>
                           ▼
                         </Box>
                       </Box>
@@ -378,9 +405,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             sx={{
                               display: 'flex',
                               alignItems: 'center',
-                              py: 1,
-                              px: 1.5,
-                              minHeight: 40,
+                              py: 1.5,
+                              px: 2,
                               '&.Mui-selected': {
                                 bgcolor: 'primary.light',
                                 color: 'primary.contrastText',
@@ -390,10 +416,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                               }
                             }}
                           >
-                            <Box sx={{ mr: 1.5, color: location.pathname === item.path ? 'inherit' : 'primary.main', fontSize: '1rem' }}>
+                            <Box sx={{ mr: 2, color: location.pathname === item.path ? 'inherit' : 'primary.main' }}>
                               {item.icon}
                             </Box>
-                            <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.8125rem' }}>
+                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
                               {item.text}
                             </Typography>
                           </MenuItem>
@@ -414,7 +440,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       textDecoration: 'none', 
                       textTransform: 'capitalize',
                       fontWeight: 500,
-                      fontSize: '0.8125rem',
                       '&:hover': {
                         color: 'primary.main'
                       }
@@ -428,28 +453,23 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </Box>
 
           {/* Profile menu */}
-          <Box sx={{ 
-            display: 'flex', 
-            alignItems: 'center',
-            ml: { xs: 'auto', md: 0 }
-          }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Tooltip title="Profile menu">
               <IconButton
-                size="medium"
+                size="large"
                 aria-label="account of current user"
                 aria-controls="menu-appbar"
                 aria-haspopup="true"
                 onClick={handleProfileMenu}
                 sx={{ 
                   color: 'primary.main',
-                  p: 0.5,
                   '&:hover': {
                     bgcolor: 'primary.light',
                     color: 'primary.contrastText'
                   }
                 }}
               >
-                <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: '0.875rem' }}>
+                <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main', fontSize: '1rem' }}>
                   {user?.username?.charAt(0).toUpperCase() || <AccountCircle />}
                 </Avatar>
               </IconButton>
@@ -472,29 +492,29 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 }
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', p: 1.5, pb: 1 }}>
-                <Avatar sx={{ width: 40, height: 40, bgcolor: 'primary.main', fontWeight: 700, mr: 1.5, fontSize: '0.875rem' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', p: 2, pb: 1 }}>
+                <Avatar sx={{ width: 48, height: 48, bgcolor: 'primary.main', fontWeight: 700, mr: 2 }}>
                   {user?.username?.charAt(0).toUpperCase() || <AccountCircle />}
                 </Avatar>
                 <Box>
-                  <Typography sx={{ fontWeight: 600, fontSize: 14, lineHeight: 1.2 }}>
+                  <Typography sx={{ fontWeight: 600, fontSize: 16, lineHeight: 1.2 }}>
                     {user?.username || 'Usuario'}
                   </Typography>
-                  <Typography sx={{ fontSize: 11, color: 'text.secondary', lineHeight: 1.2 }}>
+                  <Typography sx={{ fontSize: 13, color: 'text.secondary', lineHeight: 1.2 }}>
                     {user?.email || 'correo@ejemplo.com'}
                   </Typography>
                 </Box>
               </Box>
-              <Divider sx={{ my: 0.5 }} />
-              <MenuItem onClick={handleProfileClose} sx={{ py: 0.75, px: 1.5 }}>
-                <Typography sx={{ fontSize: 13 }}>Profile</Typography>
+              <Divider sx={{ my: 1 }} />
+              <MenuItem onClick={handleProfileClose}>
+                <Typography sx={{ fontSize: 14 }}>Profile</Typography>
               </MenuItem>
-              <MenuItem onClick={handleProfileClose} sx={{ py: 0.75, px: 1.5 }}>
-                <Typography sx={{ fontSize: 13 }}>Settings</Typography>
+              <MenuItem onClick={handleProfileClose}>
+                <Typography sx={{ fontSize: 14 }}>Settings</Typography>
               </MenuItem>
-              <Divider sx={{ my: 0.5 }} />
-              <MenuItem onClick={handleLogout} sx={{ color: 'error.main', py: 0.75, px: 1.5 }}>
-                <Typography sx={{ fontSize: 13, fontWeight: 600 }}>
+              <Divider />
+              <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
+                <Typography sx={{ fontSize: 14, fontWeight: 600 }}>
                   Sign out
                 </Typography>
               </MenuItem>
@@ -525,8 +545,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             '& .MuiDrawer-paper': {
               boxSizing: 'border-box',
               width: drawerWidth,
-              top: 52,
-              height: 'calc(100% - 52px)',
+              top: 64,
+              height: 'calc(100% - 64px)',
             },
           }}
         >
@@ -541,8 +561,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             '& .MuiDrawer-paper': {
               boxSizing: 'border-box',
               width: currentDrawerWidth,
-              top: 52,
-              height: 'calc(100% - 52px)',
+              top: 64,
+              height: 'calc(100% - 64px)',
               transition: theme.transitions.create('width', {
                 easing: theme.transitions.easing.sharp,
                 duration: theme.transitions.duration.enteringScreen,
@@ -562,10 +582,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         sx={{
           flexGrow: 1,
           p: 3,
-          pt: 4,
           width: { md: `calc(100% - ${currentDrawerWidth}px)` },
           ml: { xs: 0, md: 0 },
-          mt: '62px',
+          mt: '64px',
           transition: theme.transitions.create(['margin', 'width'], {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.leavingScreen,
