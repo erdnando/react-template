@@ -18,13 +18,14 @@ import {
   MenuItem,
   Divider,
   Tooltip,
+  Breadcrumbs,
+  Link as MuiLink,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
   Home as HomeIcon,
   Category as CatalogIcon,
   People as PeopleIcon,
-  Logout as LogoutIcon,
   AccountCircle,
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
@@ -88,7 +89,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     <Box>
       <Toolbar>
         <Typography variant="h6" noWrap component="div">
-          React Template
+          
         </Typography>
       </Toolbar>
       <Divider />
@@ -123,7 +124,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         ) : (
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
             <Typography variant="h6" noWrap component="div">
-              React Template
+              
             </Typography>
             <IconButton onClick={handleDrawerCollapse} color="primary">
               <ChevronLeftIcon />
@@ -170,87 +171,207 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <AppBar
         position="fixed"
         sx={{
-          width: { md: `calc(100% - ${currentDrawerWidth}px)` },
-          ml: { md: `${currentDrawerWidth}px` },
-          transition: theme.transitions.create(['width', 'margin'], {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.leavingScreen,
-          }),
+          width: '100%',
+          left: 0,
+          top: 0,
+          bgcolor: 'background.paper',
+          color: 'text.primary',
+          boxShadow: 1,
+          zIndex: (theme) => theme.zIndex.drawer + 1,
         }}
       >
-        <Toolbar>
-          {/* Solo mostrar el botón de hamburguesa en mobile */}
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { md: 'none' } }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            Modern React Template
-          </Typography>
-          <Box>
+        <Toolbar sx={{
+          minHeight: 64,
+          display: 'flex',
+          alignItems: 'center',
+          px: { xs: 2, sm: 3 },
+        }}>
+          {/* Left section: Mobile menu button + Logo + Breadcrumbs */}
+          <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+            {/* Mobile menu button - only visible on mobile */}
             <IconButton
-              size="large"
-              aria-label="account of current user"
-              aria-controls="menu-appbar"
-              aria-haspopup="true"
-              onClick={handleProfileMenu}
               color="inherit"
+              aria-label="open drawer"
+              edge="start"
+              onClick={handleDrawerToggle}
+              sx={{ mr: 2, display: { md: 'none' } }}
             >
-                <Avatar sx={{ width: 32, height: 32 }}>
+              <MenuIcon />
+            </IconButton>
+            
+            {/* Logo */}
+            <Box
+              sx={{
+                width: 40,
+                height: 40,
+                mr: 3,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 2,
+                boxShadow: 1,
+                bgcolor: 'background.default',
+                overflow: 'hidden',
+                flexShrink: 0,
+              }}
+            >
+              <img
+                src={process.env.PUBLIC_URL + '/imgs/logo.png'}
+                alt="Logo"
+                style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                loading="eager"
+              />
+            </Box>
+            
+            {/* Breadcrumbs - always visible on desktop, hidden on mobile */}
+            <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+              <Breadcrumbs aria-label="breadcrumb" sx={{ color: 'text.secondary' }}>
+                <MuiLink
+                  component={Link}
+                  to="/"
+                  sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    color: 'text.secondary', 
+                    textDecoration: 'none', 
+                    fontWeight: 500,
+                    '&:hover': {
+                      color: 'primary.main'
+                    }
+                  }}
+                >
+                  Home
+                </MuiLink>
+                {location.pathname.split('/').filter((x) => x).map((value, index) => {
+                  const pathSegments = location.pathname.split('/').filter((x) => x);
+                  const to = `/${pathSegments.slice(0, index + 1).join('/')}`;
+                  const isLast = index === pathSegments.length - 1;
+                  
+                  return isLast ? (
+                    <Typography 
+                      color="text.primary" 
+                      key={to} 
+                      sx={{ 
+                        textTransform: 'capitalize',
+                        fontWeight: 600
+                      }}
+                    >
+                      {value.replace(/-/g, ' ')}
+                    </Typography>
+                  ) : (
+                    <MuiLink
+                      component={Link}
+                      to={to}
+                      key={to}
+                      sx={{ 
+                        color: 'text.secondary', 
+                        textDecoration: 'none', 
+                        textTransform: 'capitalize',
+                        fontWeight: 500,
+                        '&:hover': {
+                          color: 'primary.main'
+                        }
+                      }}
+                    >
+                      {value.replace(/-/g, ' ')}
+                    </MuiLink>
+                  );
+                })}
+              </Breadcrumbs>
+            </Box>
+          </Box>
+
+          {/* Right section: Profile menu */}
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Tooltip title="Profile menu">
+              <IconButton
+                size="large"
+                aria-label="account of current user"
+                aria-controls="menu-appbar"
+                aria-haspopup="true"
+                onClick={handleProfileMenu}
+                sx={{ 
+                  color: 'primary.main',
+                  '&:hover': {
+                    bgcolor: 'primary.light',
+                    color: 'primary.contrastText'
+                  }
+                }}
+              >
+                <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main', fontSize: '1rem' }}>
                   {user?.username?.charAt(0).toUpperCase() || <AccountCircle />}
                 </Avatar>
               </IconButton>
-              <Menu
-                id="menu-appbar"
-                anchorEl={anchorEl}
-                anchorOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-                keepMounted
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-                open={Boolean(anchorEl)}
-                onClose={handleProfileClose}
-              >
-                <MenuItem onClick={handleProfileClose}>
-                  <Typography variant="body2">
-                    Welcome, {user?.username || 'User'}
+            </Tooltip>
+            
+            {/* Profile dropdown menu */}
+            <Menu
+              id="menu-appbar"
+              anchorEl={anchorEl}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              keepMounted
+              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+              open={Boolean(anchorEl)}
+              onClose={handleProfileClose}
+              sx={{
+                mt: 1,
+                '& .MuiPaper-root': {
+                  minWidth: 200,
+                  boxShadow: 3,
+                }
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', p: 2, pb: 1 }}>
+                <Avatar sx={{ width: 48, height: 48, bgcolor: 'primary.main', fontWeight: 700, mr: 2 }}>
+                  {user?.username?.charAt(0).toUpperCase() || <AccountCircle />}
+                </Avatar>
+                <Box>
+                  <Typography sx={{ fontWeight: 600, fontSize: 16, lineHeight: 1.2 }}>
+                    {user?.username || 'Usuario'}
                   </Typography>
-                </MenuItem>
-                <Divider />
-                <MenuItem onClick={handleLogout}>
-                  <ListItemIcon>
-                    <LogoutIcon fontSize="small" />
-                  </ListItemIcon>
-                  Logout
-                </MenuItem>
-              </Menu>
-            </Box>
+                  <Typography sx={{ fontSize: 13, color: 'text.secondary', lineHeight: 1.2 }}>
+                    {user?.email || 'correo@ejemplo.com'}
+                  </Typography>
+                </Box>
+              </Box>
+              <Divider sx={{ my: 1 }} />
+              <MenuItem onClick={handleProfileClose}>
+                <Typography sx={{ fontSize: 14 }}>Profile</Typography>
+              </MenuItem>
+              <MenuItem onClick={handleProfileClose}>
+                <Typography sx={{ fontSize: 14 }}>Settings</Typography>
+              </MenuItem>
+              <Divider />
+              <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
+                <Typography sx={{ fontSize: 14, fontWeight: 600 }}>
+                  Sign out
+                </Typography>
+              </MenuItem>
+            </Menu>
+          </Box>
         </Toolbar>
       </AppBar>
-      
+      {/* Sidebar (Drawer) fixed below topbar */}
       <Box
         component="nav"
-        sx={{ width: { md: currentDrawerWidth }, flexShrink: { md: 0 } }}
+        sx={{
+          width: { md: currentDrawerWidth },
+          flexShrink: { md: 0 },
+          zIndex: (theme) => theme.zIndex.appBar - 1,
+        }}
       >
         <Drawer
           variant="temporary"
           open={mobileOpen}
           onClose={handleDrawerToggle}
-          ModalProps={{
-            keepMounted: true,
-          }}
+          ModalProps={{ keepMounted: true }}
           sx={{
             display: { xs: 'block', md: 'none' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+            '& .MuiDrawer-paper': {
+              boxSizing: 'border-box',
+              width: drawerWidth,
+              top: 64, // Height of AppBar
+            },
           }}
         >
           {mobileDrawer}
@@ -259,14 +380,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           variant="permanent"
           sx={{
             display: { xs: 'none', md: 'block' },
-            '& .MuiDrawer-paper': { 
-              boxSizing: 'border-box', 
+            '& .MuiDrawer-paper': {
+              boxSizing: 'border-box',
               width: currentDrawerWidth,
+              top: 64, // Height of AppBar
+              height: 'calc(100% - 64px)',
               transition: theme.transitions.create('width', {
                 easing: theme.transitions.easing.sharp,
                 duration: theme.transitions.duration.enteringScreen,
               }),
               overflowX: 'hidden',
+              position: 'fixed',
             },
           }}
           open
@@ -274,20 +398,21 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           {desktopDrawer}
         </Drawer>
       </Box>
-      
+      {/* Main content area with correct padding */}
       <Box
         component="main"
         sx={{
           flexGrow: 1,
           p: 3,
-          width: { md: `calc(100% - ${currentDrawerWidth}px)` },
+          pt: 11, // 64px AppBar + 24px default padding
+          width: '100%',
+          ml: { md: `${currentDrawerWidth}px` },
           transition: theme.transitions.create(['width', 'margin'], {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.leavingScreen,
           }),
         }}
       >
-        <Toolbar />
         {children}
       </Box>
     </Box>
