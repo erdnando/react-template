@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -9,20 +9,24 @@ import {
   Paper,
   Avatar,
   Chip,
+  Collapse,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
   TrendingUp as TrendingUpIcon,
   People as PeopleIcon,
   Inventory as InventoryIcon,
+  Api as ApiIcon,
 } from '@mui/icons-material';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { RootState } from '../../store/store';
+import ApiTester from '../../components/ApiTester';
 
 const Home: React.FC = () => {
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
   const navigate = useNavigate();
+  const [showApiTester, setShowApiTester] = useState(false);
 
   const dashboardCards = [
     {
@@ -222,6 +226,31 @@ const Home: React.FC = () => {
           </Button>
         </Paper>
       )}
+
+      {/* API Tester Section */}
+      <Box sx={{ mt: 4 }}>
+        <Paper sx={{ p: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <ApiIcon color="primary" />
+              <Typography variant="h6">
+                API Connection Tester
+              </Typography>
+            </Box>
+            <Button
+              variant="outlined"
+              onClick={() => setShowApiTester(!showApiTester)}
+              startIcon={<ApiIcon />}
+            >
+              {showApiTester ? 'Hide Tester' : 'Show API Tester'}
+            </Button>
+          </Box>
+          
+          <Collapse in={showApiTester}>
+            <ApiTester />
+          </Collapse>
+        </Paper>
+      </Box>
     </Container>
   );
 };

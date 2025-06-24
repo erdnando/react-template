@@ -22,7 +22,7 @@ export const useAuth = () => {
     dispatch(setError(null));
     
     try {
-      const credentials: AuthCredentials = { username: email, password };
+      const credentials: AuthCredentials = { email: email, password };
       const response = await authService.login(credentials);
       dispatch(loginAction(response.user));
       return response;
