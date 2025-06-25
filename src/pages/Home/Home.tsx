@@ -22,6 +22,7 @@ import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { RootState } from '../../store/store';
 import ApiTester from '../../components/ApiTester';
+import UserInfo from '../../components/UserInfo';
 
 const Home: React.FC = () => {
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
@@ -143,6 +144,11 @@ const Home: React.FC = () => {
                 </CardContent>
               </Card>
             ))}
+          </Box>
+
+          {/* User Info Component */}
+          <Box sx={{ mb: 4 }}>
+            <UserInfo />
           </Box>
 
           <Box 

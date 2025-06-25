@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import * as authService from '../services/auth';
 import { login as loginAction, logout as logoutAction, setLoading, setError } from '../store/slices/authSlice';
@@ -8,14 +7,6 @@ import { AuthCredentials } from '../types/auth';
 export const useAuth = () => {
   const dispatch = useDispatch();
   const authState = useSelector((state: RootState) => state.auth);
-
-  // Verificar si hay usuario almacenado al cargar
-  useEffect(() => {
-    const currentUser = authService.getCurrentUser();
-    if (currentUser) {
-      dispatch(loginAction(currentUser.user));
-    }
-  }, [dispatch]);
 
   const login = async (email: string, password: string) => {
     dispatch(setLoading(true));

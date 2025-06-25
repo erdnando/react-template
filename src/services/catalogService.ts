@@ -1,7 +1,21 @@
-import { fetchData, postData, updateData, deleteData } from './api';
-import { Catalog } from '../store/slices/catalogSlice';
+import axios from 'axios';
 
-export interface CreateCatalogRequest {
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5096/api';
+
+export interface CatalogDto {
+  id: number;
+  title: string;
+  description: string;
+  category: string;
+  image?: string;
+  rating?: number;
+  price: number;
+  inStock: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreateCatalogDto {
   title: string;
   description: string;
   category: string;
@@ -11,41 +25,42 @@ export interface CreateCatalogRequest {
   inStock?: boolean;
 }
 
-export interface UpdateCatalogRequest extends CreateCatalogRequest {
-  id: number;
+export interface UpdateCatalogDto {
+  title: string;
+  description: string;
+  category: string;
+  image?: string;
+  rating?: number;
+  price: number;
+  inStock?: boolean;
 }
 
-// Get all catalogs
-export const getCatalogs = async (): Promise<Catalog[]> => {
-  return await fetchData<Catalog[]>('catalogs');
+// Obtener todos los catálogos
+export const getCatalogs = async (): Promise<CatalogDto[]> => {
+  const res = await axios.get(`${API_URL}/Catalog`);
+  return res.data.data;
 };
 
-// Get catalog by ID
-export const getCatalogById = async (id: number): Promise<Catalog> => {
-  return await fetchData<Catalog>(`catalogs/${id}`);
+// Obtener un catálogo por ID
+export const getCatalogById = async (id: number): Promise<CatalogDto> => {
+  const res = await axios.get(`${API_URL}/Catalog/${id}`);
+  return res.data.data;
 };
 
-// Get catalogs by category
-export const getCatalogsByCategory = async (category: string): Promise<Catalog[]> => {
-  return await fetchData<Catalog[]>(`catalogs/category/${category}`);
+// Crear un nuevo catálogo
+export const createCatalog = async (catalog: CreateCatalogDto): Promise<CatalogDto> => {
+  const res = await axios.post(`${API_URL}/Catalog`, catalog);
+  return res.data.data;
 };
 
-// Create new catalog
-export const createCatalog = async (catalogData: CreateCatalogRequest): Promise<Catalog> => {
-  return await postData<Catalog>('catalogs', catalogData);
+// Actualizar un catálogo existente
+export const updateCatalog = async (id: number, catalog: UpdateCatalogDto): Promise<CatalogDto> => {
+  const res = await axios.put(`${API_URL}/Catalog/${id}`, catalog);
+  return res.data.data;
 };
 
-// Update existing catalog
-export const updateCatalog = async (catalogData: UpdateCatalogRequest): Promise<Catalog> => {
-  return await updateData<Catalog>(`catalogs/${catalogData.id}`, catalogData);
-};
-
-// Delete catalog
-export const deleteCatalog = async (id: number): Promise<void> => {
-  return await deleteData<void>(`catalogs/${id}`);
-};
-
-// Update catalog stock status
-export const updateCatalogStock = async (id: number, inStock: boolean): Promise<Catalog> => {
-  return await updateData<Catalog>(`catalogs/${id}/stock`, { inStock });
+// Eliminar un catálogo
+export const deleteCatalog = async (id: number): Promise<boolean> => {
+  const res = await axios.delete(`${API_URL}/Catalog/${id}`);
+  return res.data.data;
 };

@@ -87,7 +87,7 @@ const ApiTester: React.FC = () => {
     () => createUser({
       name: 'Test User',
       email: 'testuser@example.com',
-      role: 'user'
+      password: 'test1234'
     })
   );
 

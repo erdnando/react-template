@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -38,8 +38,14 @@ import {
   Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '../../store/store';
-import { addCatalog, updateCatalog, deleteCatalog, Catalog } from '../../store/slices/catalogSlice';
+import { RootState, AppDispatch } from '../../store/store';
+import {
+  fetchCatalogs,
+  createCatalogAsync,
+  updateCatalogAsync,
+  deleteCatalogAsync,
+  Catalog
+} from '../../store/slices/catalogSlice';
 
 const Catalogs: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -60,9 +66,12 @@ const Catalogs: React.FC = () => {
     inStock: true,
   });
 
-  const dispatch = useDispatch();
-  // Obtener catálogos del estado global
-  const catalogs = useSelector((state: RootState) => state.catalog.catalogs);
+  const dispatch: AppDispatch = useDispatch();
+  const { catalogs, loading, error } = useSelector((state: RootState) => state.catalog);
+
+  useEffect(() => {
+    dispatch(fetchCatalogs());
+  }, [dispatch]);
 
   const categories = ['all', 'Electronics', 'Home & Kitchen', 'Sports', 'Books', 'Clothing'];
 
@@ -115,12 +124,11 @@ const Catalogs: React.FC = () => {
   };
 
   // Handle form submission
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formData.title.trim() || !formData.description.trim() || !formData.price.trim() || !formData.category.trim()) {
       setSnackbar({ open: true, message: 'Please fill all required fields', severity: 'error' });
       return;
     }
-
     const catalogData = {
       title: formData.title.trim(),
       description: formData.description.trim(),
@@ -130,24 +138,42 @@ const Catalogs: React.FC = () => {
       inStock: formData.inStock,
       image: `https://via.placeholder.com/300x200?text=${encodeURIComponent(formData.title)}`,
     };
-
     if (editingProduct) {
-      dispatch(updateCatalog({ ...catalogData, id: editingProduct.id }));
+      await dispatch(updateCatalogAsync({ id: editingProduct.id, data: catalogData }));
       setSnackbar({ open: true, message: 'Product updated successfully!', severity: 'success' });
     } else {
-      dispatch(addCatalog({ ...catalogData, id: Date.now() }));
+      await dispatch(createCatalogAsync(catalogData));
       setSnackbar({ open: true, message: 'Product added successfully!', severity: 'success' });
     }
-
     setOpenDialog(false);
     resetForm();
   };
 
   // Handle delete
-  const handleDelete = (id: number) => {
-    dispatch(deleteCatalog(id));
+  const handleDelete = async (id: number) => {
+    await dispatch(deleteCatalogAsync(id));
     setSnackbar({ open: true, message: 'Product deleted successfully!', severity: 'success' });
   };
+
+  // Loading y error UI
+  if (loading) {
+    return (
+      <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '40vh' }}>
+          <Typography variant="h6">Loading catalogs...</Typography>
+        </Box>
+      </Container>
+    );
+  }
+  if (error) {
+    return (
+      <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '40vh' }}>
+          <Typography variant="h6" color="error">{error}</Typography>
+        </Box>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>

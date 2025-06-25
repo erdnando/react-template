@@ -26,7 +26,6 @@ import {
   Home as HomeIcon,
   Category as CatalogIcon,
   People as PeopleIcon,
-  AccountCircle,
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
 } from '@mui/icons-material';
@@ -450,7 +449,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 }}
               >
                 <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: '0.875rem' }}>
-                  {user?.username?.charAt(0).toUpperCase() || <AccountCircle />}
+                  {user?.username?.charAt(0).toUpperCase() || 'U'}
                 </Avatar>
               </IconButton>
             </Tooltip>
@@ -474,7 +473,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             >
               <Box sx={{ display: 'flex', alignItems: 'center', p: 1.5, pb: 1 }}>
                 <Avatar sx={{ width: 40, height: 40, bgcolor: 'primary.main', fontWeight: 700, mr: 1.5, fontSize: '0.875rem' }}>
-                  {user?.username?.charAt(0).toUpperCase() || <AccountCircle />}
+                  {user?.username?.charAt(0).toUpperCase() || 'U'}
                 </Avatar>
                 <Box>
                   <Typography sx={{ fontWeight: 600, fontSize: 14, lineHeight: 1.2 }}>

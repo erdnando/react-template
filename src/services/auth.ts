@@ -17,73 +17,51 @@ axios.interceptors.request.use(
   }
 );
 
-// Usuario demo local
-const DEMO_USER = {
-  id: '1',
-  username: 'demo',
-  email: 'demo@example.com',
+// Función para normalizar los datos del usuario desde el backend
+const normalizeUser = (rawUser: Record<string, unknown>): { id: string; username: string; email: string } => {
+  if (!rawUser) {
+    return {
+      id: '1',
+      username: 'Usuario',
+      email: 'correo@ejemplo.com'
+    };
+  }
+  
+  // Extraer valores reales, evitar usar fallbacks si hay datos válidos
+  const id = String(rawUser.id || rawUser.userId || '1');
+  const username = String(rawUser.username || rawUser.name || rawUser.userName || rawUser.displayName || 'Usuario');
+  const email = String(rawUser.email || rawUser.emailAddress || rawUser.mail || 'correo@ejemplo.com');
+  
+  return { id, username, email };
 };
-const DEMO_PASSWORD = 'demo123';
-const DEMO_TOKEN = 'mock-token';
 
 export const login = async (credentials: AuthCredentials): Promise<AuthResponse> => {
-  // Intentar login con API real primero
-  try {
-    const response = await axios.post(`${API_URL}/auth/login`, credentials);
-    const { token, user } = response.data;
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
-    return response.data;
-  } catch (error: unknown) {
-    console.warn('API login failed, trying demo user...', error);
-    
-    // Fallback: Login local con usuario demo
-    if (
-      credentials.email === DEMO_USER.email &&
-      credentials.password === DEMO_PASSWORD
-    ) {
-      localStorage.setItem('token', DEMO_TOKEN);
-      localStorage.setItem('user', JSON.stringify(DEMO_USER));
-      return { token: DEMO_TOKEN, user: DEMO_USER };
-    }
-    
-    // Si ni la API ni el demo funcionan, lanzar error
-    if (error instanceof Error && 'response' in error) {
-      const axiosError = error as { response?: { data?: { message?: string } } };
-      throw new Error(axiosError.response?.data?.message || 'Login failed');
-    }
-    throw new Error('Login failed');
-  }
+  const response = await axios.post(`${API_URL}/auth/login`, credentials);
+  
+  // El backend devuelve { success, message, data: { token, user } }
+  const { token, user: rawUser } = response.data.data;
+  
+  // Normalizar el usuario para asegurar que siempre tenga username y email
+  const user = normalizeUser(rawUser);
+  
+  localStorage.setItem('token', token);
+  localStorage.setItem('user', JSON.stringify(user));
+  
+  return { token, user };
 };
 
 export const register = async (credentials: AuthCredentials & { email: string }): Promise<AuthResponse> => {
-  // Intentar registro con API real primero
-  try {
-    const response = await axios.post(`${API_URL}/auth/register`, credentials);
-    const { token, user } = response.data;
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
-    return response.data;
-  } catch (error: unknown) {
-    console.warn('API register failed, trying demo user...', error);
-    
-    // Fallback: Registro local solo permite el usuario demo
-    if (
-      credentials.email === DEMO_USER.email &&
-      credentials.password === DEMO_PASSWORD
-    ) {
-      localStorage.setItem('token', DEMO_TOKEN);
-      localStorage.setItem('user', JSON.stringify(DEMO_USER));
-      return { token: DEMO_TOKEN, user: DEMO_USER };
-    }
-    
-    // Si ni la API ni el demo funcionan, lanzar error
-    if (error instanceof Error && 'response' in error) {
-      const axiosError = error as { response?: { data?: { message?: string } } };
-      throw new Error(axiosError.response?.data?.message || 'Registration failed');
-    }
-    throw new Error('Registration failed');
-  }
+  const response = await axios.post(`${API_URL}/auth/register`, credentials);
+  
+  // El backend devuelve { success, message, data: { token, user } }
+  const { token, user: rawUser } = response.data.data;
+  
+  // Normalizar el usuario para asegurar que siempre tenga username y email
+  const user = normalizeUser(rawUser);
+  
+  localStorage.setItem('token', token);
+  localStorage.setItem('user', JSON.stringify(user));
+  return { token, user };
 };
 
 export const logout = async (): Promise<void> => {
@@ -104,9 +82,14 @@ export const getCurrentUser = () => {
   // localStorage.getItem returns null when the key doesn't exist, not undefined
   if (token && user && user !== 'null') {
     try {
+      const rawUser = JSON.parse(user);
+      
+      // Normalizar el usuario en caso de que tenga datos inconsistentes
+      const normalizedUser = normalizeUser(rawUser);
+      
       return {
         token,
-        user: JSON.parse(user)
+        user: normalizedUser
       };
     } catch (error) {
       console.error('Error parsing user from localStorage:', error);

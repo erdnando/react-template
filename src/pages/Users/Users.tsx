@@ -1,7 +1,13 @@
-import React, { useState } from 'react';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../store/store';
+import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState, AppDispatch } from '../../store/store';
 import { User } from '../../store/slices/userSlice';
+import {
+  fetchUsers,
+  createUserAsync,
+  updateUserAsync,
+  deleteUserAsync
+} from '../../store/slices/userSlice';
 import {
   Box,
   Paper,
@@ -30,64 +36,81 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  SelectChangeEvent
 } from '@mui/material';
 import {
   Search as SearchIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   Add as AddIcon,
-  Person as PersonIcon,
-  AdminPanelSettings as AdminIcon,
-  Work as WorkIcon,
 } from '@mui/icons-material';
 
 const Users: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    password: '', // Only for create
+    role: 'user',
+    status: 'active',
+  });
+  const [isEdit, setIsEdit] = useState(false);
+  const dispatch: AppDispatch = useDispatch();
+  const { users, loading, error } = useSelector((state: RootState) => state.users);
 
-  // Obtener usuarios del estado global
-  const users = useSelector((state: RootState) => state.users.users);
+  useEffect(() => {
+    dispatch(fetchUsers());
+  }, [dispatch]);
 
   const filteredUsers = users.filter(user =>
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getRoleIcon = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return <AdminIcon sx={{ fontSize: '1.1rem' }} />;
-      case 'moderator':
-        return <WorkIcon sx={{ fontSize: '1.1rem' }} />;
-      default:
-        return <PersonIcon sx={{ fontSize: '1.1rem' }} />;
-    }
-  };
-
-  const getRoleColor = (role: string): "primary" | "secondary" | "success" | "error" | "info" | "warning" => {
-    switch (role) {
-      case 'admin':
-        return 'error';
-      case 'moderator':
-        return 'warning';
-      default:
-        return 'primary';
-    }
-  };
-
-  const getStatusColor = (status: string): "success" | "error" => {
-    return status === 'active' ? 'success' : 'error';
-  };
-
   const handleEdit = (user: User) => {
     setSelectedUser(user);
+    setForm({
+      name: user.name,
+      email: user.email,
+      password: '',
+      role: user.role,
+      status: user.status,
+    });
+    setIsEdit(true);
     setOpenDialog(true);
+  };
+
+  const handleDelete = async (user: User) => {
+    await dispatch(deleteUserAsync(user.id));
   };
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setSelectedUser(null);
+    setForm({ name: '', email: '', password: '', role: 'user', status: 'active' });
+    setIsEdit(false);
+  };
+
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name as string]: value }));
+  };
+
+  const handleFormSelectChange = (e: React.ChangeEvent<{ name?: string; value: unknown }> | SelectChangeEvent<string>) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name as string]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isEdit && selectedUser) {
+      await dispatch(updateUserAsync({ id: selectedUser.id, data: { name: form.name, email: form.email } }));
+    } else {
+      await dispatch(createUserAsync({ name: form.name, email: form.email, password: form.password }));
+    }
+    handleCloseDialog();
   };
 
   const userStats = {
@@ -96,6 +119,25 @@ const Users: React.FC = () => {
     admins: users.filter(u => u.role === 'admin').length,
     newThisMonth: users.filter(u => new Date(u.joinDate).getMonth() === new Date().getMonth()).length,
   };
+
+  if (loading) {
+    return (
+      <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '40vh' }}>
+          <Typography variant="h6">Loading users...</Typography>
+        </Box>
+      </Container>
+    );
+  }
+  if (error) {
+    return (
+      <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '40vh' }}>
+          <Typography variant="h6" color="error">{error}</Typography>
+        </Box>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
@@ -230,7 +272,6 @@ const Users: React.FC = () => {
                   <TableCell sx={{ fontSize: '0.875rem' }}>{user.email}</TableCell>
                   <TableCell>
                     <Chip
-                      icon={getRoleIcon(user.role)}
                       label={user.role}
                       color={getRoleColor(user.role)}
                       size="small"
@@ -254,7 +295,11 @@ const Users: React.FC = () => {
                     >
                       <EditIcon sx={{ fontSize: '1.1rem' }} />
                     </IconButton>
-                    <IconButton color="error" size="small">
+                    <IconButton 
+                      onClick={() => handleDelete(user)}
+                      color="error"
+                      size="small"
+                    >
                       <DeleteIcon sx={{ fontSize: '1.1rem' }} />
                     </IconButton>
                   </TableCell>
@@ -283,7 +328,6 @@ const Users: React.FC = () => {
                   </Typography>
                   <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
                     <Chip
-                      icon={getRoleIcon(user.role)}
                       label={user.role}
                       color={getRoleColor(user.role)}
                       size="small"
@@ -308,7 +352,11 @@ const Users: React.FC = () => {
                   >
                     <EditIcon sx={{ fontSize: '1.1rem' }} />
                   </IconButton>
-                  <IconButton color="error" size="small">
+                  <IconButton 
+                    onClick={() => handleDelete(user)}
+                    color="error"
+                    size="small"
+                  >
                     <DeleteIcon sx={{ fontSize: '1.1rem' }} />
                   </IconButton>
                 </Box>
@@ -340,7 +388,9 @@ const Users: React.FC = () => {
             <TextField
               fullWidth
               label="Name"
-              defaultValue={selectedUser?.name || ''}
+              name="name"
+              value={form.name}
+              onChange={handleFormChange}
               size="small"
               sx={{ mb: 2 }}
             />
@@ -348,14 +398,30 @@ const Users: React.FC = () => {
               fullWidth
               label="Email"
               type="email"
-              defaultValue={selectedUser?.email || ''}
+              name="email"
+              value={form.email}
+              onChange={handleFormChange}
               size="small"
               sx={{ mb: 2 }}
             />
+            {!isEdit && (
+              <TextField
+                fullWidth
+                label="Password"
+                type="password"
+                name="password"
+                value={form.password}
+                onChange={handleFormChange}
+                size="small"
+                sx={{ mb: 2 }}
+              />
+            )}
             <FormControl fullWidth sx={{ mb: 2 }}>
               <InputLabel size="small">Role</InputLabel>
               <Select
-                defaultValue={selectedUser?.role || 'user'}
+                name="role"
+                value={form.role}
+                onChange={handleFormSelectChange}
                 label="Role"
                 size="small"
               >
@@ -367,7 +433,9 @@ const Users: React.FC = () => {
             <FormControl fullWidth>
               <InputLabel size="small">Status</InputLabel>
               <Select
-                defaultValue={selectedUser?.status || 'active'}
+                name="status"
+                value={form.status}
+                onChange={handleFormSelectChange}
                 label="Status"
                 size="small"
               >
@@ -379,7 +447,7 @@ const Users: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog} size="small">Cancel</Button>
-          <Button variant="contained" size="small">
+          <Button variant="contained" size="small" onClick={handleSubmit}>
             {selectedUser ? 'Update' : 'Create'}
           </Button>
         </DialogActions>
@@ -402,6 +470,21 @@ const Users: React.FC = () => {
       </Fab>
     </Container>
   );
+};
+
+// Helpers para iconos y colores
+const getRoleColor = (role: string): "primary" | "secondary" | "success" | "error" | "info" | "warning" => {
+  switch (role) {
+    case 'admin':
+      return 'error';
+    case 'moderator':
+      return 'warning';
+    default:
+      return 'primary';
+  }
+};
+const getStatusColor = (status: string): "success" | "error" => {
+  return status === 'active' ? 'success' : 'error';
 };
 
 export default Users;

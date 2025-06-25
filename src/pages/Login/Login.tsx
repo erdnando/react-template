@@ -8,8 +8,6 @@ import {
   Avatar,
   CircularProgress,
   Link,
-  Divider,
-  Chip,
 } from '@mui/material';
 import { LockOutlined as LockOutlinedIcon } from '@mui/icons-material';
 import { useAuth } from '../../hooks/useAuth';
@@ -105,23 +103,6 @@ const Login: React.FC = () => {
             'Sign In'
           )}
         </Button>
-
-        <Divider sx={{ my: 3 }}>
-          <Chip 
-            label="Demo Credentials" 
-            size="small" 
-            variant="outlined"
-            color="primary"
-          />
-        </Divider>
-
-        <Alert severity="info" sx={{ mb: 2 }}>
-          <Typography variant="body2">
-            <strong>Demo Login:</strong><br />
-            Email: demo@example.com<br />
-            Password: demo123
-          </Typography>
-        </Alert>
 
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
           <Link href="/register" variant="body2" sx={{ textDecoration: 'none' }}>

@@ -3,9 +3,9 @@
 
 import { fetchData, postData } from '../services/api';
 import { login } from '../services/auth';
-import { getUsers, createUser, CreateUserRequest } from '../services/userService';
+import { getUsers, createUser, CreateUserDto } from '../services/userService';
 
-import { getCatalogs, createCatalog, CreateCatalogRequest } from '../services/catalogService';
+import { getCatalogs, createCatalog, CreateCatalogDto } from '../services/catalogService';
 import { getTasks, createTask, CreateTaskDto } from '../services/taskService';
 
 interface WindowWithApiTests extends Window {
@@ -14,11 +14,11 @@ interface WindowWithApiTests extends Window {
     testRawPost: (endpoint: string, data: unknown) => Promise<unknown>;
     testLogin: (username?: string, password?: string) => Promise<unknown>;
     testGetUsers: () => Promise<unknown>;
-    testCreateUser: (userData?: CreateUserRequest) => Promise<unknown>;
+    testCreateUser: (userData?: CreateUserDto) => Promise<unknown>;
     testGetTasks: () => Promise<unknown>;
     testCreateTask: (taskData?: CreateTaskDto) => Promise<unknown>;
     testGetCatalogs: () => Promise<unknown>;
-    testCreateCatalog: (catalogData?: CreateCatalogRequest) => Promise<unknown>;
+    testCreateCatalog: (catalogData?: CreateCatalogDto) => Promise<unknown>;
     runAllTests: () => Promise<unknown>;
     checkToken: () => void;
     clearAuth: () => void;
@@ -78,11 +78,11 @@ interface WindowWithApiTests extends Window {
     }
   },
 
-  async testCreateUser(userData?: CreateUserRequest) {
-    const defaultUser: CreateUserRequest = {
+  async testCreateUser(userData?: CreateUserDto) {
+    const defaultUser: CreateUserDto = {
       name: 'Test User',
       email: 'test@example.com',
-      role: 'user'
+      password: 'test1234'
     };
     const user = userData || defaultUser;
     
@@ -143,12 +143,13 @@ interface WindowWithApiTests extends Window {
     }
   },
 
-  async testCreateCatalog(catalogData?: CreateCatalogRequest) {
-    const defaultCatalog: CreateCatalogRequest = {
-      title: 'Test Product',
-      description: 'This is a test product from console',
-      category: 'Test',
-      price: 99.99
+  async testCreateCatalog(catalogData?: CreateCatalogDto) {
+    const defaultCatalog: CreateCatalogDto = {
+      title: 'Test Catalog',
+      description: 'This is a test catalog',
+      category: 'Electronics',
+      price: 100,
+      inStock: true
     };
     const catalog = catalogData || defaultCatalog;
     
