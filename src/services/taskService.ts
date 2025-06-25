@@ -1,43 +1,59 @@
-import { fetchData, postData, updateData, deleteData } from './api';
-import { Task } from '../store/slices/tasksSlice';
+import axios from 'axios';
 
-export interface CreateTaskRequest {
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5096/api';
+
+export interface TaskDto {
+  id: number;
   title: string;
   description: string;
-  priority: 'low' | 'medium' | 'high';
-  completed?: boolean;
+  completed: boolean;
+  priority: string;
+  createdAt: string;
+  updatedAt: string;
+  userId: number;
+  userName?: string;
 }
 
-export interface UpdateTaskRequest extends CreateTaskRequest {
-  id: number;
+export interface CreateTaskDto {
+  title: string;
+  description: string;
+  priority: string;
+  userId: number;
 }
 
-// Get all tasks
-export const getTasks = async (): Promise<Task[]> => {
-  return await fetchData<Task[]>('tasks');
+export interface UpdateTaskDto {
+  title: string;
+  description: string;
+  completed: boolean;
+  priority: string;
+}
+
+// Obtener todas las tareas
+export const getTasks = async (): Promise<TaskDto[]> => {
+  const res = await axios.get(`${API_URL}/Tasks`);
+  return res.data.data;
 };
 
-// Get task by ID
-export const getTaskById = async (id: number): Promise<Task> => {
-  return await fetchData<Task>(`tasks/${id}`);
+// Obtener una tarea por ID
+export const getTaskById = async (id: number): Promise<TaskDto> => {
+  const res = await axios.get(`${API_URL}/Tasks/${id}`);
+  return res.data.data;
 };
 
-// Create new task
-export const createTask = async (taskData: CreateTaskRequest): Promise<Task> => {
-  return await postData<Task>('tasks', taskData);
+// Crear una nueva tarea
+export const createTask = async (task: CreateTaskDto): Promise<TaskDto> => {
+  const res = await axios.post(`${API_URL}/Tasks`, task);
+  return res.data.data;
 };
 
-// Update existing task
-export const updateTask = async (taskData: UpdateTaskRequest): Promise<Task> => {
-  return await updateData<Task>(`tasks/${taskData.id}`, taskData);
+// Actualizar una tarea existente
+export const updateTask = async (id: number, task: UpdateTaskDto): Promise<TaskDto> => {
+  const res = await axios.put(`${API_URL}/Tasks/${id}`, task);
+  return res.data.data;
 };
 
-// Delete task
-export const deleteTask = async (id: number): Promise<void> => {
-  return await deleteData<void>(`tasks/${id}`);
-};
-
-// Toggle task completion
-export const toggleTaskCompletion = async (id: number): Promise<Task> => {
-  return await updateData<Task>(`tasks/${id}/toggle`, {});
+// Eliminar una tarea
+export const deleteTask = async (id: number): Promise<boolean> => {
+  const res = await axios.delete(`${API_URL}/Tasks/${id}`);
+  return res.data.data;
 };

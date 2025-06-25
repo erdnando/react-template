@@ -4,8 +4,9 @@
 import { fetchData, postData } from '../services/api';
 import { login } from '../services/auth';
 import { getUsers, createUser, CreateUserRequest } from '../services/userService';
-import { getTasks, createTask, CreateTaskRequest } from '../services/taskService';
+
 import { getCatalogs, createCatalog, CreateCatalogRequest } from '../services/catalogService';
+import { getTasks, createTask, CreateTaskDto } from '../services/taskService';
 
 interface WindowWithApiTests extends Window {
   apiTests: {
@@ -15,7 +16,7 @@ interface WindowWithApiTests extends Window {
     testGetUsers: () => Promise<unknown>;
     testCreateUser: (userData?: CreateUserRequest) => Promise<unknown>;
     testGetTasks: () => Promise<unknown>;
-    testCreateTask: (taskData?: CreateTaskRequest) => Promise<unknown>;
+    testCreateTask: (taskData?: CreateTaskDto) => Promise<unknown>;
     testGetCatalogs: () => Promise<unknown>;
     testCreateCatalog: (catalogData?: CreateCatalogRequest) => Promise<unknown>;
     runAllTests: () => Promise<unknown>;
@@ -109,11 +110,12 @@ interface WindowWithApiTests extends Window {
     }
   },
 
-  async testCreateTask(taskData?: CreateTaskRequest) {
-    const defaultTask: CreateTaskRequest = {
+  async testCreateTask(taskData?: CreateTaskDto) {
+    const defaultTask: CreateTaskDto = {
       title: 'Test Task',
       description: 'This is a test task from console',
-      priority: 'medium'
+      priority: 'medium',
+      userId: 1
     };
     const task = taskData || defaultTask;
     

@@ -1,7 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '../../store/store';
-import { Task, addTask, deleteTask, updateTask } from '../../store/slices/tasksSlice';
+import { RootState, AppDispatch } from '../../store/store';
+import { Task } from '../../store/slices/tasksSlice';
+import {
+  fetchTasks,
+  createTaskAsync,
+  updateTaskAsync,
+  deleteTaskAsync
+} from '../../store/slices/tasksSlice';
 import {
   Box,
   Paper,
@@ -34,10 +40,17 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 
 const Tasks: React.FC = () => {
-  const tasks = useSelector((state: RootState) => state.tasks.tasks);
-  const dispatch = useDispatch();
+  const { tasks, loading, error } = useSelector((state: RootState) => state.tasks);
+  const dispatch: AppDispatch = useDispatch();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
+  // UserId: for demo, use 1. Replace with real userId from auth if available.
+  const userId = 1;
+
+  useEffect(() => {
+    dispatch(fetchTasks());
+  }, [dispatch]);
 
   const [form, setForm] = useState({
     title: '',
@@ -105,29 +118,29 @@ const Tasks: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
     if (editingId !== null) {
-      dispatch(updateTask({
+      await dispatch(updateTaskAsync({
         id: editingId,
-        title: form.title,
-        description: form.description,
-        completed: false,
-        priority: form.priority as 'low' | 'medium' | 'high',
+        data: {
+          title: form.title,
+          description: form.description,
+          completed: false, // Optionally allow editing completed
+          priority: form.priority as 'low' | 'medium' | 'high',
+        },
       }));
       setSnackbar({ open: true, message: 'Task updated!', severity: 'success' });
       setEditingId(null);
     } else {
-      const newTask: Task = {
-        id: Date.now(),
+      await dispatch(createTaskAsync({
         title: form.title,
         description: form.description,
-        completed: false,
-        priority: form.priority as 'low' | 'medium' | 'high',
-      };
-      dispatch(addTask(newTask));
+        priority: form.priority,
+        userId: userId,
+      }));
       setSnackbar({ open: true, message: 'Task added!', severity: 'success' });
     }
     setForm({ title: '', description: '', priority: 'medium' });
@@ -150,9 +163,9 @@ const Tasks: React.FC = () => {
     setDialogOpen(true);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (taskToDelete !== null) {
-      dispatch(deleteTask(taskToDelete));
+      await dispatch(deleteTaskAsync(taskToDelete));
       setSnackbar({ open: true, message: 'Task deleted!', severity: 'success' });
     }
     setDialogOpen(false);
@@ -163,6 +176,26 @@ const Tasks: React.FC = () => {
     setDialogOpen(false);
     setTaskToDelete(null);
   };
+
+  // Loading and error UI
+  if (loading) {
+    return (
+      <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '40vh' }}>
+          <Typography variant="h6">Loading tasks...</Typography>
+        </Box>
+      </Container>
+    );
+  }
+  if (error) {
+    return (
+      <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '40vh' }}>
+          <Alert severity="error">{error}</Alert>
+        </Box>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>

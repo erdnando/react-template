@@ -103,7 +103,8 @@ const ApiTester: React.FC = () => {
     () => createTask({
       title: 'Test Task',
       description: 'This is a test task',
-      priority: 'medium'
+      priority: 'medium',
+      userId: 1 // Replace with a valid userId as needed
     })
   );
 
