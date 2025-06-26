@@ -16,6 +16,9 @@ const Navigation: React.FC = () => {
                     <Link to="/users">Users</Link>
                 </li>
                 <li>
+                    <Link to="/permissions">Permisos</Link>
+                </li>
+                <li>
                     <Link to="/login">Login</Link>
                 </li>
                 <li>

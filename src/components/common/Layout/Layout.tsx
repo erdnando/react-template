@@ -77,6 +77,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       icon: <CatalogIcon />,
       path: '/catalogs',
     },
+    {
+      text: 'Permisos',
+      icon: <AssignmentIcon />,
+      path: '/permissions',
+    },
   ];
 
   const handleDrawerToggle = () => {
@@ -276,7 +281,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               flexShrink: 0,
             }}
           >
-            React Admin
+            System
           </Typography>
 
           {/* Breadcrumbs */}
