@@ -17,8 +17,9 @@ const PermissionsManagementMockup: React.FC = () => {
   //   "Administrador", "Analista", "Reportes", "Soporte", "Invitado"
   // ], []);
   // Permisos posibles sobre cada rol
-  const rolePermissionTypes = ["Admin", "Edición", "Viewer"];
-  const rolePermissionIcons: Record<'Admin' | 'Edición' | 'Viewer', JSX.Element> = {
+  const rolePermissionTypes = ["Admin", "Edición", "Viewer"] as const;
+  type PermissionType = typeof rolePermissionTypes[number];
+  const rolePermissionIcons: Record<PermissionType, JSX.Element> = {
     Admin: <Tooltip title="Acceso total"><CheckCircleIcon color="error" fontSize="small" /></Tooltip>,
     "Edición": <Tooltip title="Puede editar"><EditIcon color="primary" fontSize="small" /></Tooltip>,
     Viewer: <Tooltip title="Solo lectura"><VisibilityIcon color="success" fontSize="small" /></Tooltip>,
@@ -54,19 +55,20 @@ const PermissionsManagementMockup: React.FC = () => {
   const handleModuleToggle = (user: string, module: string) => {
     setUserModulePermissions(prev => {
       setPendingChanges(true);
+      const prevType = prev[user]?.[module]?.type as PermissionType | undefined;
       return ({
         ...prev,
         [user]: {
           ...prev[user],
           [module]: {
             enabled: !(prev[user]?.[module]?.enabled),
-            type: prev[user]?.[module]?.type || 'Lectura',
+            type: prevType || 'Viewer',
           }
         }
       });
     });
   };
-  const handleModuleTypeChange = (user: string, module: string, type: string) => {
+  const handleModuleTypeChange = (user: string, module: string, type: PermissionType) => {
     setUserModulePermissions(prev => {
       setPendingChanges(true);
       return ({
@@ -97,7 +99,7 @@ const PermissionsManagementMockup: React.FC = () => {
 
   // User search and selection
   const [userSearch, setUserSearch] = useState('');
-  const [userChecked, setUserChecked] = useState<string[]>([]);
+  // const [userChecked, setUserChecked] = useState<string[]>([]); // Eliminado: no se usa
   // Usuario activo para edición
   const [activeUser, setActiveUser] = useState<string | null>(null);
   // Agrupar usuarios filtrados por rol
@@ -109,27 +111,7 @@ const PermissionsManagementMockup: React.FC = () => {
     });
     return result;
   }, [usersByRole, allRoles, userSearch]);
-  const handleUserToggle = (user: string) => {
-    setUserChecked(prev => {
-      let updated: string[];
-      if (prev.includes(user)) {
-        updated = prev.filter(u => u !== user);
-      } else {
-        updated = [...prev, user];
-      }
-      // Si el usuario activo se deselecciona, cambiar el activo
-      if (!updated.includes(activeUser || '')) {
-        setActiveUser(updated.length > 0 ? updated[0] : null);
-      }
-      // Si no hay usuario activo, seleccionar el primero
-      if (!activeUser && updated.length > 0) {
-        setActiveUser(updated[0]);
-      }
-      return updated;
-    });
-    // Si no hay usuario activo, selecciona el actual
-    if (!activeUser) setActiveUser(user);
-  };
+  // handleUserToggle eliminado: no se usa en el código
 
 
   return (
@@ -179,50 +161,51 @@ const PermissionsManagementMockup: React.FC = () => {
                   <ListItemText primary="No users found" sx={{ pl: 1, color: 'text.secondary' }} />
                 </ListItem>
               ) : (
-                Object.entries(filteredUsersByRole).map(([role, users]) => [
-                  <ListItem key={role} sx={{ bgcolor: 'grey.100', py: 0.5 }}>
-                    <ListItemText primary={role} primaryTypographyProps={{ fontWeight: 600, fontSize: 13 }} />
-                  </ListItem>,
-                  ...users.map(user => (
-                    <ListItem
-                      key={user}
-                      disablePadding
-                      sx={{
-                        bgcolor: activeUser === user ? 'primary.main' : undefined,
-                        color: activeUser === user ? '#fff' : undefined,
-                        fontWeight: activeUser === user ? 700 : 400,
-                        cursor: 'pointer',
-                        transition: 'background 0.2s, color 0.2s',
-                        boxShadow: activeUser === user ? 2 : undefined,
-                        borderRadius: 1,
-                      }}
-                      onClick={() => setActiveUser(user)}
-                    >
-                      <ListItemText
-                        primary={
-                          <span>
-                            {userChecked.includes(user) ? <b>* </b> : null}
-                            {user}
-                          </span>
-                        }
-                        sx={{ pl: 1, fontWeight: activeUser === user ? 700 : 400, color: activeUser === user ? '#fff' : undefined }}
-                      />
-                    </ListItem>
-                  ))
-                ])
+                // Renderizar un array plano de elementos (sin flatMap)
+                Object.entries(filteredUsersByRole)
+                  .map(([role, users]) => {
+                    const items: React.ReactNode[] = [
+                      <ListItem key={`role-${role}`} sx={{ bgcolor: 'grey.100', py: 0.5 }}>
+                        <ListItemText primary={role} primaryTypographyProps={{ fontWeight: 600, fontSize: 13 }} />
+                      </ListItem>
+                    ];
+                    items.push(...users.map(user => (
+                      <ListItem
+                        key={`user-${role}-${user}`}
+                        disablePadding
+                        sx={{
+                          bgcolor: activeUser === user ? 'primary.main' : undefined,
+                          color: activeUser === user ? '#fff' : undefined,
+                          fontWeight: activeUser === user ? 700 : 400,
+                          cursor: 'pointer',
+                          transition: 'background 0.2s, color 0.2s',
+                          boxShadow: activeUser === user ? 2 : undefined,
+                          borderRadius: 1,
+                        }}
+                        onClick={() => setActiveUser(user)}
+                      >
+                        <ListItemText
+                          primary={<span>{user}</span>}
+                          sx={{ pl: 1, fontWeight: activeUser === user ? 700 : 400, color: activeUser === user ? '#fff' : undefined }}
+                        />
+                      </ListItem>
+                    )));
+                    return items;
+                  })
+                  .flat()
               )}
             </List>
             {/* Resumen visual de permisos activos */}
-            {userChecked.length === 1 && (
+            {activeUser && (
               <Box sx={{ mt: 2 }}>
                 <Typography variant="subtitle2" sx={{ mb: 1 }}>Resumen de permisos:</Typography>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                  {Object.entries(userModulePermissions[userChecked[0]] || {})
+                  {Object.entries(userModulePermissions[activeUser] || {})
                     .filter(([, v]) => v.enabled)
                     .map(([mod, v]) => (
                       <Chip key={mod} label={`${mod} (${v.type})`} color={v.type === 'Admin' ? 'error' : v.type === 'Edición' ? 'primary' : 'success'} size="small" icon={rolePermissionIcons[v.type as 'Admin' | 'Edición' | 'Viewer']} />
                     ))}
-                  {Object.values(userModulePermissions[userChecked[0]] || {}).filter(v => v.enabled).length === 0 && (
+                  {Object.values(userModulePermissions[activeUser] || {}).filter(v => v.enabled).length === 0 && (
                     <Chip label="Sin permisos asignados" size="small" />
                   )}
                 </Box>
@@ -287,7 +270,7 @@ const PermissionsManagementMockup: React.FC = () => {
                               setPendingChanges(true);
                               const updated = { ...prev[activeUser] };
                               filteredModules.forEach(module => {
-                                updated[module] = { enabled: checked, type: updated[module]?.type || 'Lectura' };
+                                updated[module] = { enabled: checked, type: updated[module]?.type || 'Viewer' };
                               });
                               return { ...prev, [activeUser]: updated };
                             });
@@ -305,7 +288,7 @@ const PermissionsManagementMockup: React.FC = () => {
                         />
                       </ListItem>
                       {filteredModules.map((module) => {
-                        const perm = userModulePermissions[activeUser]?.[module] || { enabled: false, type: 'Lectura' };
+                        const perm = userModulePermissions[activeUser]?.[module] || { enabled: false, type: 'Viewer' };
                         // Visual feedback: highlight row if enabled, highlight selected permission
                         return (
                           <ListItem
@@ -352,14 +335,14 @@ const PermissionsManagementMockup: React.FC = () => {
                                         transition: 'background 0.2s, color 0.2s',
                                         minWidth: 80,
                                       }}
-                                      onClick={perm.enabled ? () => handleModuleTypeChange(activeUser, module, type) : undefined}
+                                      onClick={perm.enabled ? () => handleModuleTypeChange(activeUser, module, type as PermissionType) : undefined}
                                     >
                                       <Checkbox
                                         checked={isSelected}
                                         disabled={!perm.enabled}
-                                        onChange={() => handleModuleTypeChange(activeUser, module, type)}
-                                        icon={rolePermissionIcons[type as 'Admin' | 'Edición' | 'Viewer']}
-                                        checkedIcon={rolePermissionIcons[type as 'Admin' | 'Edición' | 'Viewer']}
+                                        onChange={() => handleModuleTypeChange(activeUser, module, type as PermissionType)}
+                                        icon={rolePermissionIcons[type]}
+                                        checkedIcon={rolePermissionIcons[type]}
                                         sx={{
                                           p: 0.5,
                                           color: isSelected ? '#fff' : (perm.enabled ? vividText : '#bdbdbd'),
