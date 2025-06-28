@@ -6,16 +6,133 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { configureStore } from '@reduxjs/toolkit';
 import Permissions from './Permissions';
 import authSlice from '../../store/slices/authSlice';
+import userSlice from '../../store/slices/userSlice';
+
+// Mock the usePermissionsApi hook
+jest.mock('../../hooks/usePermissionsApi', () => ({
+  usePermissionsApi: () => ({
+    users: [
+      {
+        id: 1,
+        name: 'Alice Smith',
+        email: 'alice@example.com',
+        status: 'active',
+        roleId: 1,
+        isActive: true,
+        role: 'Administrador',
+        avatar: null,
+        createdAt: '2023-01-01',
+        updatedAt: '2023-01-01',
+        joinDate: '2023-01-01',
+        lastLoginAt: '2023-01-01',
+        firstName: 'Alice',
+        lastName: 'Smith',
+        fullName: 'Alice Smith'
+      },
+      {
+        id: 2,
+        name: 'Bob Johnson',
+        email: 'bob@example.com',
+        status: 'active',
+        roleId: 1,
+        isActive: true,
+        role: 'Administrador',
+        avatar: null,
+        createdAt: '2023-01-01',
+        updatedAt: '2023-01-01',
+        joinDate: '2023-01-01',
+        lastLoginAt: '2023-01-01',
+        firstName: 'Bob',
+        lastName: 'Johnson',
+        fullName: 'Bob Johnson'
+      },
+      {
+        id: 3,
+        name: 'Carol Williams',
+        email: 'carol@example.com',
+        status: 'active',
+        roleId: 2,
+        isActive: true,
+        role: 'Analista',
+        avatar: null,
+        createdAt: '2023-01-01',
+        updatedAt: '2023-01-01',
+        joinDate: '2023-01-01',
+        lastLoginAt: '2023-01-01',
+        firstName: 'Carol',
+        lastName: 'Williams',
+        fullName: 'Carol Williams'
+      },
+      {
+        id: 4,
+        name: 'David Brown',
+        email: 'david@example.com',
+        status: 'active',
+        roleId: 2,
+        isActive: true,
+        role: 'Analista',
+        avatar: null,
+        createdAt: '2023-01-01',
+        updatedAt: '2023-01-01',
+        joinDate: '2023-01-01',
+        lastLoginAt: '2023-01-01',
+        firstName: 'David',
+        lastName: 'Brown',
+        fullName: 'David Brown'
+      },
+      {
+        id: 5,
+        name: 'Eva Davis',
+        email: 'eva@example.com',
+        status: 'active',
+        roleId: 2,
+        isActive: true,
+        role: 'Analista',
+        avatar: null,
+        createdAt: '2023-01-01',
+        updatedAt: '2023-01-01',
+        joinDate: '2023-01-01',
+        lastLoginAt: '2023-01-01',
+        firstName: 'Eva',
+        lastName: 'Davis',
+        fullName: 'Eva Davis'
+      }
+    ],
+    roles: [
+      { id: 1, name: 'Administrador', description: 'Full access' },
+      { id: 2, name: 'Analista', description: 'Limited access' }
+    ],
+    modules: [
+      { id: 1, name: 'Users', description: 'User management' },
+      { id: 2, name: 'Reports', description: 'Report generation' }
+    ],
+    userModulePermissions: {},
+    loading: false,
+    error: null,
+    deleteUser: jest.fn().mockReturnValue(Promise.resolve()),
+    createRole: jest.fn().mockReturnValue(Promise.resolve()),
+    updateRole: jest.fn().mockReturnValue(Promise.resolve()),
+    deleteRole: jest.fn().mockReturnValue(Promise.resolve()),
+    saveUserPermissions: jest.fn().mockReturnValue(Promise.resolve()),
+    setUserModulePermissions: jest.fn()
+  })
+}));
 
 // Mock store
 const mockStore = configureStore({
   reducer: {
     auth: authSlice,
+    users: userSlice,
   },
   preloadedState: {
     auth: {
       isAuthenticated: true,
       user: { id: '1', username: 'Test User', email: 'test@example.com' },
+      loading: false,
+      error: null,
+    },
+    users: {
+      users: [],
       loading: false,
       error: null,
     },
@@ -42,9 +159,9 @@ describe('Permissions Component', () => {
     expect(screen.getByText('Permissions Management')).toBeInTheDocument();
   });
 
-  test('renders new user button', () => {
+  test('renders usuarios button', () => {
     renderWithProviders(<Permissions />);
-    expect(screen.getByRole('button', { name: /nuevo usuario/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /usuarios/i })).toBeInTheDocument();
   });
 
   test('renders user permissions section with role groups', () => {

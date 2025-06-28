@@ -1,59 +1,84 @@
-import axios from 'axios';
+// Task API service - Updated to match new API structure
+import { apiRequest, ApiResponse } from './apiClient';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5096/api';
-
+// Task DTOs based on the API definition
 export interface TaskDto {
   id: number;
-  title: string;
-  description: string;
+  title: string | null;
+  description: string | null;
   completed: boolean;
-  priority: string;
+  priority: string | null;
   createdAt: string;
   updatedAt: string;
   userId: number;
-  userName?: string;
+  userName: string | null;
 }
 
 export interface CreateTaskDto {
-  title: string;
-  description: string;
-  priority: string;
+  title: string | null;
+  description: string | null;
+  priority: string | null;
   userId: number;
 }
 
 export interface UpdateTaskDto {
-  title: string;
-  description: string;
-  completed: boolean;
-  priority: string;
+  title: string | null;
+  description: string | null;
+  completed: boolean | null;
+  priority: string | null;
 }
 
-// Obtener todas las tareas
-export const getTasks = async (): Promise<TaskDto[]> => {
-  const res = await axios.get(`${API_URL}/Tasks`);
-  return res.data.data;
+// Task service functions
+export const taskService = {
+  // Get all tasks
+  getTasks: (): Promise<ApiResponse<TaskDto[]>> => {
+    return apiRequest.get<TaskDto[]>('/Tasks');
+  },
+
+  // Get task by ID
+  getTaskById: (id: number): Promise<ApiResponse<TaskDto>> => {
+    return apiRequest.get<TaskDto>(`/Tasks/${id}`);
+  },
+
+  // Get tasks by user ID
+  getTasksByUserId: (userId: number): Promise<ApiResponse<TaskDto[]>> => {
+    return apiRequest.get<TaskDto[]>(`/Tasks/user/${userId}`);
+  },
+
+  // Get completed tasks
+  getCompletedTasks: (): Promise<ApiResponse<TaskDto[]>> => {
+    return apiRequest.get<TaskDto[]>('/Tasks/completed');
+  },
+
+  // Get pending tasks
+  getPendingTasks: (): Promise<ApiResponse<TaskDto[]>> => {
+    return apiRequest.get<TaskDto[]>('/Tasks/pending');
+  },
+
+  // Create new task
+  createTask: (taskData: CreateTaskDto): Promise<ApiResponse<TaskDto>> => {
+    return apiRequest.post<TaskDto>('/Tasks', taskData);
+  },
+
+  // Update task
+  updateTask: (id: number, taskData: UpdateTaskDto): Promise<ApiResponse<TaskDto>> => {
+    return apiRequest.put<TaskDto>(`/Tasks/${id}`, taskData);
+  },
+
+  // Delete task
+  deleteTask: (id: number): Promise<ApiResponse<boolean>> => {
+    return apiRequest.delete<boolean>(`/Tasks/${id}`);
+  },
 };
 
-// Obtener una tarea por ID
-export const getTaskById = async (id: number): Promise<TaskDto> => {
-  const res = await axios.get(`${API_URL}/Tasks/${id}`);
-  return res.data.data;
-};
+// Export individual functions for backward compatibility
+export const getTasks = taskService.getTasks;
+export const getTaskById = taskService.getTaskById;
+export const getTasksByUserId = taskService.getTasksByUserId;
+export const getCompletedTasks = taskService.getCompletedTasks;
+export const getPendingTasks = taskService.getPendingTasks;
+export const createTask = taskService.createTask;
+export const updateTask = taskService.updateTask;
+export const deleteTask = taskService.deleteTask;
 
-// Crear una nueva tarea
-export const createTask = async (task: CreateTaskDto): Promise<TaskDto> => {
-  const res = await axios.post(`${API_URL}/Tasks`, task);
-  return res.data.data;
-};
-
-// Actualizar una tarea existente
-export const updateTask = async (id: number, task: UpdateTaskDto): Promise<TaskDto> => {
-  const res = await axios.put(`${API_URL}/Tasks/${id}`, task);
-  return res.data.data;
-};
-
-// Eliminar una tarea
-export const deleteTask = async (id: number): Promise<boolean> => {
-  const res = await axios.delete(`${API_URL}/Tasks/${id}`);
-  return res.data.data;
-};
+export default taskService;

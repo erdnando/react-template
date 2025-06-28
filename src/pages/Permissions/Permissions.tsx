@@ -19,55 +19,46 @@ import {
   DialogContent,
   DialogActions,
   IconButton,
-  MenuItem
+  CircularProgress,
+  Alert
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import EditIcon from '@mui/icons-material/Edit';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import CloseIcon from '@mui/icons-material/Close';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import GroupIcon from '@mui/icons-material/Group';
+import SecurityIcon from '@mui/icons-material/Security';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { usePermissionsApi } from '../../hooks';
+import { UserManagement, RoleManagement } from '../../components/common';
 
 const Permissions: React.FC = () => {
-  // Lista de módulos de la app
-  const modules = useMemo(() => [
-    "Home", "Tasks", "Users", "Catalogs", "Permissions"
-  ], []);
-
-  // Lista de roles disponibles (solo lectura)
-  const roles = useMemo(() => [
-    { id: 'admin', name: 'Administrador' },
-    { id: 'analyst', name: 'Analista' },
-    { id: 'report', name: 'Reportes' },
-    { id: 'support', name: 'Soporte' },
-    { id: 'guest', name: 'Invitado' },
-  ], []);
-
-  // Estado de usuarios
-  const [users, setUsers] = useState([
-    { id: 'alice', name: 'Alice Smith', email: 'alice@example.com', status: 'active', roleId: 'admin' },
-    { id: 'bob', name: 'Bob Johnson', email: 'bob@example.com', status: 'active', roleId: 'admin' },
-    { id: 'charlie', name: 'Charlie Lee', email: 'charlie@example.com', status: 'active', roleId: 'analyst' },
-    { id: 'diana', name: 'Diana Prince', email: 'diana@example.com', status: 'active', roleId: 'analyst' },
-    { id: 'eve', name: 'Eve Adams', email: 'eve@example.com', status: 'active', roleId: 'analyst' },
-    { id: 'frank', name: 'Frank Miller', email: 'frank@example.com', status: 'active', roleId: 'report' },
-    { id: 'grace', name: 'Grace Hopper', email: 'grace@example.com', status: 'active', roleId: 'report' },
-    { id: 'henry', name: 'Henry Ford', email: 'henry@example.com', status: 'active', roleId: 'support' },
-    { id: 'ivy', name: 'Ivy Clark', email: 'ivy@example.com', status: 'active', roleId: 'support' },
-    { id: 'jack', name: 'Jack Black', email: 'jack@example.com', status: 'active', roleId: 'guest' },
-  ]);
-
-  // Estado para modales de usuarios
-  const [openUserModal, setOpenUserModal] = useState(false);
-  const [editingUser, setEditingUser] = useState<{ id?: string, name: string, email: string, status: string, roleId: string } | null>(null);
+  // Use the API hook instead of local state
+  const {
+    users,
+    roles,
+    modules,
+    userModulePermissions,
+    loading,
+    error,
+    deleteUser,
+    deleteRole,
+    saveUserPermissions,
+    setUserModulePermissions
+  } = usePermissionsApi();
+  // Estados para modales de gestión
+  const [openUsersManagement, setOpenUsersManagement] = useState(false);
+  const [openRolesManagement, setOpenRolesManagement] = useState(false);
 
   // Permisos posibles sobre cada módulo
-  const rolePermissionTypes = ["Admin", "Edición", "Viewer"];
-  const rolePermissionIcons: Record<'Admin' | 'Edición' | 'Viewer', JSX.Element> = {
+  const rolePermissionTypes = ["Admin", "Delete", "Write", "Read"];
+  const rolePermissionIcons: Record<'Admin' | 'Delete' | 'Write' | 'Read', JSX.Element> = {
     Admin: <Tooltip title="Acceso total"><CheckCircleIcon color="error" fontSize="small" /></Tooltip>,
-    "Edición": <Tooltip title="Puede editar"><EditIcon color="primary" fontSize="small" /></Tooltip>,
-    Viewer: <Tooltip title="Solo lectura"><VisibilityIcon color="success" fontSize="small" /></Tooltip>,
+    Delete: <Tooltip title="Puede eliminar"><DeleteIcon color="warning" fontSize="small" /></Tooltip>,
+    Write: <Tooltip title="Puede editar"><EditIcon color="primary" fontSize="small" /></Tooltip>,
+    Read: <Tooltip title="Solo lectura"><VisibilityIcon color="success" fontSize="small" /></Tooltip>,
   };
 
   // Estados para gestión de permisos
@@ -75,7 +66,6 @@ const Permissions: React.FC = () => {
   const lastPermissions = useRef<Record<string, Record<string, { enabled: boolean, type: string }>>>({});
   const isMobile = useMediaQuery('(max-width:600px)');
   const [search, setSearch] = useState('');
-  const [userModulePermissions, setUserModulePermissions] = useState<Record<string, Record<string, { enabled: boolean, type: string }>>>({});
   const [snackbar, setSnackbar] = useState<string | null>(null);
   const [userSearch, setUserSearch] = useState('');
   // Solo un usuario puede estar seleccionado
@@ -85,7 +75,7 @@ const Permissions: React.FC = () => {
 
   // Agrupar usuarios por rol
   const usersByRole = useMemo(() => {
-    const grouped: Record<string, { id: string, name: string }[]> = {};
+    const grouped: Record<string, { id: number, name: string }[]> = {};
     // Inicializar todos los roles, incluso si no tienen usuarios
     roles.forEach(role => {
       grouped[role.name] = users.filter(u => u.roleId === role.id);
@@ -105,13 +95,13 @@ const Permissions: React.FC = () => {
   const allRoles = useMemo(() => roles.map(r => r.name), [roles]);
   
   const filteredModules = useMemo(
-    () => modules.filter(m => m.toLowerCase().includes(search.toLowerCase())),
+    () => modules.filter(m => m.name.toLowerCase().includes(search.toLowerCase())),
     [modules, search]
   );
 
   // Filtrado de usuarios por rol y búsqueda
   const filteredUsersByRole = useMemo(() => {
-    const result: Record<string, { id: string, name: string }[]> = {};
+    const result: Record<string, { id: number, name: string }[]> = {};
     allRoles.forEach(roleName => {
       const usersInRole = usersByRole[roleName] || [];
       const filtered = usersInRole.filter(u => u.name.toLowerCase().includes(userSearch.toLowerCase()));
@@ -124,49 +114,59 @@ const Permissions: React.FC = () => {
     return result;
   }, [usersByRole, allRoles, userSearch]);
 
-  // Handlers para usuarios
-  const handleOpenNewUser = () => { setEditingUser({ name: '', email: '', status: 'active', roleId: roles[0]?.id || '' }); setOpenUserModal(true); };
-  const handleEditUser = (user: { id: string, name: string, email: string, status: string, roleId: string }) => { setEditingUser(user); setOpenUserModal(true); };
-  const handleCloseUserModal = () => { setOpenUserModal(false); setEditingUser(null); };
+  // Handlers para usuarios - ahora manejado por UserManagement component
+
+  // Handlers para gestión de modales principales
+  const handleCloseUsersManagement = () => setOpenUsersManagement(false);
+  const handleCloseRolesManagement = () => setOpenRolesManagement(false);
 
   // Handlers para permisos de módulos
-  const handleModuleToggle = (user: string, module: string) => {
+  const handleModuleToggle = (user: string, moduleCode: string) => {
     setUserModulePermissions(prev => {
       setPendingChanges(true);
-      const currentlyEnabled = prev[user]?.[module]?.enabled;
+      const currentlyEnabled = prev[user]?.[moduleCode]?.enabled;
       return ({
         ...prev,
         [user]: {
           ...prev[user],
-          [module]: {
+          [moduleCode]: {
             enabled: !currentlyEnabled,
-            type: !currentlyEnabled ? 'Viewer' : (prev[user]?.[module]?.type || 'Viewer'),
+            type: !currentlyEnabled ? 'Read' : (prev[user]?.[moduleCode]?.type || 'Read'),
+            permissionId: prev[user]?.[moduleCode]?.permissionId
           }
         }
       });
     });
   };
 
-  const handleModuleTypeChange = (user: string, module: string, type: string) => {
+  const handleModuleTypeChange = (user: string, moduleCode: string, type: string) => {
     setUserModulePermissions(prev => {
       setPendingChanges(true);
       return ({
         ...prev,
         [user]: {
           ...prev[user],
-          [module]: {
-            enabled: prev[user]?.[module]?.enabled ?? false,
-            type,
+          [moduleCode]: {
+            enabled: prev[user]?.[moduleCode]?.enabled ?? false,
+            type: type as 'Admin' | 'Delete' | 'Write' | 'Read' | 'None',
+            permissionId: prev[user]?.[moduleCode]?.permissionId
           }
         }
       });
     });
   };
 
-  const handleSave = () => {
-    lastPermissions.current = JSON.parse(JSON.stringify(userModulePermissions));
-    setPendingChanges(false);
-    setSnackbar('Cambios guardados');
+  const handleSave = async () => {
+    try {
+      if (activeUser) {
+        await saveUserPermissions(activeUser, userModulePermissions[activeUser] || {});
+        lastPermissions.current = JSON.parse(JSON.stringify(userModulePermissions));
+        setPendingChanges(false);
+        setSnackbar('Cambios guardados exitosamente');
+      }
+    } catch (error) {
+      setSnackbar('Error al guardar cambios');
+    }
   };
 
   // Selección única de usuario
@@ -186,27 +186,56 @@ const Permissions: React.FC = () => {
   // Handler para eliminar usuario con confirmación personalizada
   // Estado para el diálogo de confirmación de borrado
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<{ id: string, name: string, email: string } | null>(null);
+  const [userToDelete, setUserToDelete] = useState<{ id: number, name: string, email: string } | null>(null);
 
-  const handleDeleteUser = (userId: string) => {
+  // Estado para el diálogo de confirmación de eliminación de rol
+  const [deleteRoleDialogOpen, setDeleteRoleDialogOpen] = useState(false);
+  const [roleToDelete, setRoleToDelete] = useState<{ id: string, name: string, usersCount: number } | null>(null);
+
+  const handleDeleteUser = (userId: number) => {
     const user = users.find(u => u.id === userId);
     if (!user) return;
     setUserToDelete({ id: user.id, name: user.name, email: user.email });
     setDeleteDialogOpen(true);
   };
 
-  const confirmDeleteUser = () => {
+  const confirmDeleteUser = async () => {
     if (userToDelete) {
-      setUsers(prev => prev.filter(u => u.id !== userToDelete.id));
-      setActiveUser(prev => (prev === userToDelete.name ? null : prev));
-      setDeleteDialogOpen(false);
-      setUserToDelete(null);
+      try {
+        await deleteUser(userToDelete.id);
+        setActiveUser(prev => (prev === userToDelete.name ? null : prev));
+        setSnackbar('Usuario eliminado exitosamente');
+      } catch (error) {
+        setSnackbar('Error al eliminar usuario');
+      } finally {
+        setDeleteDialogOpen(false);
+        setUserToDelete(null);
+      }
     }
   };
 
   const cancelDeleteUser = () => {
     setDeleteDialogOpen(false);
     setUserToDelete(null);
+  };
+
+  const confirmDeleteRole = async () => {
+    if (roleToDelete) {
+      try {
+        await deleteRole(parseInt(roleToDelete.id));
+        setSnackbar('Rol eliminado correctamente');
+      } catch (error) {
+        setSnackbar('Error al eliminar rol');
+      } finally {
+        setDeleteRoleDialogOpen(false);
+        setRoleToDelete(null);
+      }
+    }
+  };
+
+  const cancelDeleteRole = () => {
+    setDeleteRoleDialogOpen(false);
+    setRoleToDelete(null);
   };
 
   const renderUserList = () => {
@@ -307,9 +336,7 @@ const Permissions: React.FC = () => {
                           </span>
                         }
                       />
-                      <IconButton size="small" onClick={() => handleEditUser(fullUser)}>
-                        <EditIcon fontSize="small" />
-                      </IconButton>
+                      {/* Botón de editar usuario ahora se maneja en el modal UserManagement */}
                       <IconButton size="small" color="error" onClick={() => handleDeleteUser(fullUser.id)} title="Eliminar usuario">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
                       </IconButton>
@@ -326,13 +353,42 @@ const Permissions: React.FC = () => {
 
   return (
     <Box sx={{ p: isMobile ? 1 : 3 }}>
+      {loading && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+          <CircularProgress />
+        </Box>
+      )}
+      
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 2 }}>
         <Typography variant="h4" sx={{ fontSize: isMobile ? 22 : 32, flex: 1 }}>
           Permissions Management
         </Typography>
-        <Button variant="outlined" color="primary" onClick={handleOpenNewUser} sx={{ minWidth: 140 }}>
-          Nuevo Usuario
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button 
+            variant="outlined"
+            color="primary" 
+            startIcon={<GroupIcon />}
+            onClick={() => setOpenUsersManagement(true)}
+            sx={{ minWidth: 120 }}
+          >
+            Usuarios
+          </Button>
+          <Button 
+            variant="outlined"
+            color="secondary" 
+            startIcon={<SecurityIcon />}
+            onClick={() => setOpenRolesManagement(true)}
+            sx={{ minWidth: 120 }}
+          >
+            Roles
+          </Button>
+        </Box>
       </Box>
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, minHeight: { xs: 400, md: '70vh' }, alignItems: 'stretch' }}>
@@ -382,8 +438,27 @@ const Permissions: React.FC = () => {
                 // Buscar el usuario activo completo
                 const activeUserObj = users.find(u => u.name === activeUser);
                 const isInactive = activeUserObj?.status === 'inactive';
+                const userRole = roles.find(r => r.id === activeUserObj?.roleId);
+                const isUnassigned = userRole?.name.toLowerCase() === 'sin asignar' || userRole?.name.toLowerCase() === 'unassigned';
+                const canEditPermissions = !isInactive && !isUnassigned;
                 return (
                   <>
+                    {isUnassigned && (
+                      <Typography 
+                        color="warning.main" 
+                        sx={{ 
+                          mb: 2, 
+                          p: 1.5, 
+                          bgcolor: 'warning.50', 
+                          borderRadius: 1, 
+                          fontSize: '0.9em',
+                          border: '1px solid',
+                          borderColor: 'warning.200'
+                        }}
+                      >
+                        Este usuario está en el rol &quot;Sin asignar&quot; y solo puede ver sus permisos, no editarlos.
+                      </Typography>
+                    )}
                     <TextField
                       placeholder={`Buscar módulo para ${activeUser}...`}
                       size="small"
@@ -398,7 +473,7 @@ const Permissions: React.FC = () => {
                           </InputAdornment>
                         ),
                       }}
-                      disabled={isInactive}
+                      disabled={!canEditPermissions}
                     />
                     <List
                       dense
@@ -409,8 +484,8 @@ const Permissions: React.FC = () => {
                         overflow: 'auto',
                         border: '1px solid #eee',
                         borderRadius: 1,
-                        opacity: isInactive ? 0.5 : 1,
-                        pointerEvents: isInactive ? 'none' : 'auto',
+                        opacity: !canEditPermissions ? 0.5 : 1,
+                        pointerEvents: !canEditPermissions ? 'none' : 'auto',
                       }}
                     >
                       {filteredModules.length === 0 ? (
@@ -422,21 +497,21 @@ const Permissions: React.FC = () => {
                           <ListItem sx={{ bgcolor: 'grey.100', py: 0.5 }}>
                             <Checkbox
                               edge="start"
-                              checked={filteredModules.every(module => userModulePermissions[activeUser]?.[module]?.enabled)}
-                              indeterminate={filteredModules.some(module => userModulePermissions[activeUser]?.[module]?.enabled) && !filteredModules.every(module => userModulePermissions[activeUser]?.[module]?.enabled)}
+                              checked={filteredModules.every(module => userModulePermissions[activeUser]?.[module.code]?.enabled)}
+                              indeterminate={filteredModules.some(module => userModulePermissions[activeUser]?.[module.code]?.enabled) && !filteredModules.every(module => userModulePermissions[activeUser]?.[module.code]?.enabled)}
                               onChange={e => {
                                 const checked = e.target.checked;
                                 setUserModulePermissions(prev => {
                                   setPendingChanges(true);
                                   const updated = { ...prev[activeUser] };
                                   filteredModules.forEach(module => {
-                                    updated[module] = { enabled: checked, type: checked ? 'Viewer' : (updated[module]?.type || 'Viewer') };
+                                    updated[module.code] = { enabled: checked, type: checked ? 'Read' : (updated[module.code]?.type || 'Read'), permissionId: updated[module.code]?.permissionId };
                                   });
                                   return { ...prev, [activeUser]: updated };
                                 });
                               }}
                               color="primary"
-                              disabled={isInactive}
+                              disabled={!canEditPermissions}
                             />
                             <ListItemText
                               primary={
@@ -463,10 +538,10 @@ const Permissions: React.FC = () => {
                             />
                           </ListItem>
                           {filteredModules.map((module) => {
-                            const perm = userModulePermissions[activeUser]?.[module] || { enabled: false, type: 'Viewer' };
+                            const perm = userModulePermissions[activeUser]?.[module.code] || { enabled: false, type: 'Read' };
                             return (
                               <ListItem
-                                key={module}
+                                key={module.id}
                                 sx={{
                                   display: 'flex',
                                   alignItems: 'center',
@@ -479,26 +554,26 @@ const Permissions: React.FC = () => {
                                 <Checkbox
                                   edge="start"
                                   checked={perm.enabled}
-                                  onChange={() => handleModuleToggle(activeUser, module)}
+                                  onChange={() => handleModuleToggle(activeUser, module.code)}
                                   color={perm.enabled ? 'primary' : 'default'}
-                                  disabled={isInactive}
+                                  disabled={!canEditPermissions}
                                 />
                                 <ListItemText
-                                  primary={module}
-                                  sx={{ minWidth: 120, cursor: isInactive ? 'not-allowed' : 'pointer', userSelect: 'none', textDecoration: isInactive ? 'line-through' : undefined }}
-                                  onClick={() => !isInactive && handleModuleToggle(activeUser, module)}
+                                  primary={module.name}
+                                  sx={{ minWidth: 120, cursor: !canEditPermissions ? 'not-allowed' : 'pointer', userSelect: 'none', textDecoration: !canEditPermissions ? 'line-through' : undefined }}
+                                  onClick={() => canEditPermissions && handleModuleToggle(activeUser, module.code)}
                                 />
                                 <Box sx={{ display: 'flex', gap: 1, ml: 2 }}>
                                   {rolePermissionTypes.map(type => {
                                     const isSelected = perm.type === type && perm.enabled;
                                     let chipColor: string | undefined = undefined;
                                     if (isSelected) {
-                                      chipColor = type === 'Admin' ? '#f44336' : type === 'Edición' ? '#1976d2' : '#2e7d32';
+                                      chipColor = type === 'Admin' ? '#f44336' : type === 'Delete' ? '#ff9800' : type === 'Write' ? '#1976d2' : '#2e7d32';
                                     }
-                                    const vividColor = type === 'Admin' ? '#fff5f5' : type === 'Edición' ? '#f5fafd' : '#f5fcf7';
-                                    const vividText = type === 'Admin' ? '#b71c1c' : type === 'Edición' ? '#1976d2' : '#2e7d32';
+                                    const vividColor = type === 'Admin' ? '#fff5f5' : type === 'Delete' ? '#fff3e0' : type === 'Write' ? '#f5fafd' : '#f5fcf7';
+                                    const vividText = type === 'Admin' ? '#b71c1c' : type === 'Delete' ? '#ef6c00' : type === 'Write' ? '#1976d2' : '#2e7d32';
                                     return (
-                                      <Tooltip key={type} title={type === 'Admin' ? 'Acceso total' : type === 'Edición' ? 'Puede editar' : 'Solo lectura'}>
+                                      <Tooltip key={type} title={type === 'Admin' ? 'Acceso total' : type === 'Delete' ? 'Puede eliminar' : type === 'Write' ? 'Puede editar' : 'Solo lectura'}>
                                         <Box
                                           sx={{
                                             display: 'flex',
@@ -509,18 +584,18 @@ const Permissions: React.FC = () => {
                                             bgcolor: isSelected ? chipColor : (perm.enabled ? vividColor : undefined),
                                             color: isSelected ? '#fff' : (perm.enabled ? vividText : '#bdbdbd'),
                                             opacity: isSelected ? 1 : (perm.enabled ? 0.6 : 0.6),
-                                            cursor: isInactive ? 'not-allowed' : (perm.enabled ? 'pointer' : 'not-allowed'),
+                                            cursor: !canEditPermissions ? 'not-allowed' : (perm.enabled ? 'pointer' : 'not-allowed'),
                                             transition: 'background 0.2s, color 0.2s',
                                             minWidth: 80,
                                           }}
-                                          onClick={!isInactive && perm.enabled ? () => handleModuleTypeChange(activeUser, module, type) : undefined}
+                                          onClick={canEditPermissions && perm.enabled ? () => handleModuleTypeChange(activeUser, module.code, type) : undefined}
                                         >
                                           <Checkbox
                                             checked={isSelected}
-                                            disabled={!perm.enabled || isInactive}
-                                            onChange={() => handleModuleTypeChange(activeUser, module, type)}
-                                            icon={rolePermissionIcons[type as 'Admin' | 'Edición' | 'Viewer']}
-                                            checkedIcon={rolePermissionIcons[type as 'Admin' | 'Edición' | 'Viewer']}
+                                            disabled={!perm.enabled || !canEditPermissions}
+                                            onChange={() => handleModuleTypeChange(activeUser, module.code, type)}
+                                            icon={rolePermissionIcons[type as 'Admin' | 'Delete' | 'Write' | 'Read']}
+                                            checkedIcon={rolePermissionIcons[type as 'Admin' | 'Delete' | 'Write' | 'Read']}
                                             sx={{
                                               p: 0.5,
                                               color: isSelected ? '#fff' : (perm.enabled ? vividText : '#bdbdbd'),
@@ -565,90 +640,7 @@ const Permissions: React.FC = () => {
         </Button>
       </Box>
 
-      {/* Modal para usuarios */}
-      <Dialog open={openUserModal} onClose={handleCloseUserModal}>
-        <DialogTitle>
-          {editingUser?.id ? 'Editar Usuario' : 'Nuevo Usuario'}
-          <IconButton
-            onClick={handleCloseUserModal}
-            sx={{ position: 'absolute', right: 8, top: 8 }}
-          >
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Nombre del usuario"
-            fullWidth
-            variant="outlined"
-            value={editingUser?.name || ''}
-            onChange={(e) => setEditingUser(prev => prev ? { ...prev, name: e.target.value } : null)}
-            sx={{ mb: 2 }}
-          />
-          <TextField
-            margin="dense"
-            label="Email"
-            type="email"
-            fullWidth
-            variant="outlined"
-            value={editingUser?.email || ''}
-            onChange={(e) => setEditingUser(prev => prev ? { ...prev, email: e.target.value } : null)}
-            sx={{ mb: 2 }}
-          />
-          <TextField
-            select
-            margin="dense"
-            label="Rol"
-            fullWidth
-            variant="outlined"
-            value={editingUser?.roleId || ''}
-            onChange={(e) => setEditingUser(prev => prev ? { ...prev, roleId: e.target.value } : null)}
-            sx={{ mb: 2 }}
-          >
-            {roles.map(role => (
-              <MenuItem key={role.id} value={role.id}>{role.name}</MenuItem>
-            ))}
-          </TextField>
-          <TextField
-            select
-            margin="dense"
-            label="Estatus"
-            fullWidth
-            variant="outlined"
-            value={editingUser?.status || 'active'}
-            onChange={(e) => setEditingUser(prev => prev ? { ...prev, status: e.target.value } : null)}
-          >
-            <MenuItem value="active">Activo</MenuItem>
-            <MenuItem value="inactive">Inactivo</MenuItem>
-          </TextField>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseUserModal}>Cancelar</Button>
-          <Button
-            variant="contained"
-            disabled={!editingUser?.name.trim() || !editingUser?.email.trim()}
-            onClick={() => {
-              if (editingUser) {
-                setUsers(prev => {
-                  if (editingUser.id) {
-                    // Edición: actualiza usuario existente
-                    return prev.map(u => u.id === editingUser.id ? { ...u, name: editingUser.name, email: editingUser.email, status: editingUser.status, roleId: editingUser.roleId } : u);
-                  } else {
-                    // Nuevo usuario: agrega con id único
-                    const newId = editingUser.name.trim().toLowerCase().replace(/\s+/g, '_') + '_' + Date.now();
-                    return [...prev, { id: newId, name: editingUser.name, email: editingUser.email, status: editingUser.status, roleId: editingUser.roleId }];
-                  }
-                });
-              }
-              handleCloseUserModal();
-            }}
-          >
-            Guardar
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Los modales de gestión de usuarios ahora son manejados por el componente UserManagement */}
 
       {/* Diálogo de confirmación para eliminar usuario */}
       <Dialog open={deleteDialogOpen} onClose={cancelDeleteUser}>
@@ -664,6 +656,47 @@ const Permissions: React.FC = () => {
           <Button onClick={confirmDeleteUser} color="error" variant="contained">Eliminar</Button>
         </DialogActions>
       </Dialog>
+
+      {/* Diálogo de confirmación para eliminar rol */}
+      <Dialog open={deleteRoleDialogOpen} onClose={cancelDeleteRole}>
+        <DialogTitle>Eliminar rol</DialogTitle>
+        <DialogContent>
+          <Typography>¿Estás seguro de que deseas eliminar el rol <b>{roleToDelete?.name}</b>?</Typography>
+          {roleToDelete && roleToDelete.usersCount > 0 && (
+            <Typography color="warning.main" sx={{ mt: 1 }}>
+              Este rol tiene <b>{roleToDelete.usersCount} usuario{roleToDelete.usersCount !== 1 ? 's' : ''}</b> asignado{roleToDelete.usersCount !== 1 ? 's' : ''}. 
+              {roleToDelete.usersCount !== 1 ? ' Estos usuarios' : ' Este usuario'} pasará{roleToDelete.usersCount !== 1 ? 'n' : ''} a estar &quot;Sin asignar&quot;.
+            </Typography>
+          )}
+          <Typography color="error" sx={{ mt: 1 }}>
+            Esta acción es permanente y no se puede deshacer.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={cancelDeleteRole} color="primary">Cancelar</Button>
+          <Button onClick={confirmDeleteRole} color="error" variant="contained">Eliminar</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Modal de Gestión de Usuarios */}
+      {openUsersManagement && (
+        <UserManagement 
+          isModal={true}
+          onClose={handleCloseUsersManagement}
+          showStats={false}
+          title="Gestión de Usuarios"
+        />
+      )}
+
+      {/* Modal de Gestión de Roles */}
+      {openRolesManagement && (
+        <RoleManagement 
+          isModal={true}
+          onClose={handleCloseRolesManagement}
+          showStats={false}
+          title="Gestión de Roles"
+        />
+      )}
 
       <Snackbar
         open={!!snackbar}

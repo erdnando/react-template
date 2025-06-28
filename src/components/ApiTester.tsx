@@ -121,7 +121,10 @@ const ApiTester: React.FC = () => {
       title: 'Test Product',
       description: 'This is a test product',
       category: 'Test',
-      price: 99.99
+      image: null,
+      rating: 4.5,
+      price: 99.99,
+      inStock: true
     })
   );
 

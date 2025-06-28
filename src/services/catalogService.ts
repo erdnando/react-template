@@ -1,66 +1,103 @@
-import axios from 'axios';
+// Catalog API service - Updated to match new API structure
+import { apiRequest, ApiResponse } from './apiClient';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5096/api';
-
+// Catalog DTOs based on the API definition
 export interface CatalogDto {
   id: number;
-  title: string;
-  description: string;
-  category: string;
-  image?: string;
-  rating?: number;
+  title: string | null;
+  description: string | null;
+  category: string | null;
+  image: string | null;
+  rating: number;
   price: number;
   inStock: boolean;
   createdAt: string;
-  updatedAt?: string;
+  updatedAt: string;
 }
 
 export interface CreateCatalogDto {
-  title: string;
-  description: string;
-  category: string;
-  image?: string;
-  rating?: number;
+  title: string | null;
+  description: string | null;
+  category: string | null;
+  image: string | null;
+  rating: number;
   price: number;
-  inStock?: boolean;
+  inStock: boolean;
 }
 
 export interface UpdateCatalogDto {
-  title: string;
-  description: string;
-  category: string;
-  image?: string;
-  rating?: number;
-  price: number;
-  inStock?: boolean;
+  title: string | null;
+  description: string | null;
+  category: string | null;
+  image: string | null;
+  rating: number | null;
+  price: number | null;
+  inStock: boolean | null;
 }
 
-// Obtener todos los catálogos
-export const getCatalogs = async (): Promise<CatalogDto[]> => {
-  const res = await axios.get(`${API_URL}/Catalog`);
-  return res.data.data;
+// Catalog service functions
+export const catalogService = {
+  // Get all catalogs
+  getCatalogs: (): Promise<ApiResponse<CatalogDto[]>> => {
+    return apiRequest.get<CatalogDto[]>('/Catalog');
+  },
+
+  // Get catalog by ID
+  getCatalogById: (id: number): Promise<ApiResponse<CatalogDto>> => {
+    return apiRequest.get<CatalogDto>(`/Catalog/${id}`);
+  },
+
+  // Get catalogs by category
+  getCatalogsByCategory: (category: string): Promise<ApiResponse<CatalogDto[]>> => {
+    return apiRequest.get<CatalogDto[]>(`/Catalog/category/${encodeURIComponent(category)}`);
+  },
+
+  // Get catalogs by type
+  getCatalogsByType: (type: string): Promise<ApiResponse<CatalogDto[]>> => {
+    return apiRequest.get<CatalogDto[]>(`/Catalog/type/${encodeURIComponent(type)}`);
+  },
+
+  // Get active catalogs
+  getActiveCatalogs: (): Promise<ApiResponse<CatalogDto[]>> => {
+    return apiRequest.get<CatalogDto[]>('/Catalog/active');
+  },
+
+  // Get catalogs in stock
+  getCatalogsInStock: (): Promise<ApiResponse<CatalogDto[]>> => {
+    return apiRequest.get<CatalogDto[]>('/Catalog/in-stock');
+  },
+
+  // Create new catalog
+  createCatalog: (catalogData: CreateCatalogDto): Promise<ApiResponse<CatalogDto>> => {
+    return apiRequest.post<CatalogDto>('/Catalog', catalogData);
+  },
+
+  // Update catalog
+  updateCatalog: (id: number, catalogData: UpdateCatalogDto): Promise<ApiResponse<CatalogDto>> => {
+    return apiRequest.put<CatalogDto>(`/Catalog/${id}`, catalogData);
+  },
+
+  // Delete catalog
+  deleteCatalog: (id: number): Promise<ApiResponse<boolean>> => {
+    return apiRequest.delete<boolean>(`/Catalog/${id}`);
+  },
+
+  // Update catalog status (activate/deactivate)
+  updateCatalogStatus: (id: number, isActive: boolean): Promise<ApiResponse<CatalogDto>> => {
+    return apiRequest.patch<CatalogDto>(`/Catalog/${id}/status`, isActive);
+  },
 };
 
-// Obtener un catálogo por ID
-export const getCatalogById = async (id: number): Promise<CatalogDto> => {
-  const res = await axios.get(`${API_URL}/Catalog/${id}`);
-  return res.data.data;
-};
+// Export individual functions for backward compatibility
+export const getCatalogs = catalogService.getCatalogs;
+export const getCatalogById = catalogService.getCatalogById;
+export const getCatalogsByCategory = catalogService.getCatalogsByCategory;
+export const getCatalogsByType = catalogService.getCatalogsByType;
+export const getActiveCatalogs = catalogService.getActiveCatalogs;
+export const getCatalogsInStock = catalogService.getCatalogsInStock;
+export const createCatalog = catalogService.createCatalog;
+export const updateCatalog = catalogService.updateCatalog;
+export const deleteCatalog = catalogService.deleteCatalog;
+export const updateCatalogStatus = catalogService.updateCatalogStatus;
 
-// Crear un nuevo catálogo
-export const createCatalog = async (catalog: CreateCatalogDto): Promise<CatalogDto> => {
-  const res = await axios.post(`${API_URL}/Catalog`, catalog);
-  return res.data.data;
-};
-
-// Actualizar un catálogo existente
-export const updateCatalog = async (id: number, catalog: UpdateCatalogDto): Promise<CatalogDto> => {
-  const res = await axios.put(`${API_URL}/Catalog/${id}`, catalog);
-  return res.data.data;
-};
-
-// Eliminar un catálogo
-export const deleteCatalog = async (id: number): Promise<boolean> => {
-  const res = await axios.delete(`${API_URL}/Catalog/${id}`);
-  return res.data.data;
-};
+export default catalogService;

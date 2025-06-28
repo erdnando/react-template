@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../../store/store';
 import { login as loginAction } from '../../../store/slices/authSlice';
-import { getCurrentUser } from '../../../services/auth';
+import { authService } from '../../../services/authApiService';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -15,15 +15,23 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
 
   // Verificar si hay usuario almacenado al cargar y cuando cambie el estado
   useEffect(() => {
-    const currentUser = getCurrentUser();
+    const currentUser = authService.getCurrentUser();
+    const isAuthenticatedFromStorage = authService.isAuthenticated();
     
-    if (currentUser && currentUser.user) {
-      // Siempre actualizar con los datos más recientes de localStorage
+    if (currentUser && isAuthenticatedFromStorage) {
+      // Convert UserDto to the format expected by the auth slice
+      const user = {
+        id: currentUser.id.toString(),
+        username: `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.email || '',
+        email: currentUser.email || ''
+      };
+      
+      // Always update with the most recent data from localStorage
       if (!user || 
-          user.id !== currentUser.user.id || 
-          user.username !== currentUser.user.username || 
-          user.email !== currentUser.user.email) {
-        dispatch(loginAction(currentUser.user));
+          user.id !== currentUser.id.toString() || 
+          user.username !== (`${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.email || '') || 
+          user.email !== (currentUser.email || '')) {
+        dispatch(loginAction(user));
       }
     }
   }, [dispatch, isAuthenticated, user]);
@@ -31,9 +39,17 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
   // También escuchar cambios en localStorage
   useEffect(() => {
     const handleStorageChange = () => {
-      const currentUser = getCurrentUser();
-      if (currentUser) {
-        dispatch(loginAction(currentUser.user));
+      const currentUser = authService.getCurrentUser();
+      const isAuthenticatedFromStorage = authService.isAuthenticated();
+      
+      if (currentUser && isAuthenticatedFromStorage) {
+        // Convert UserDto to the format expected by the auth slice
+        const user = {
+          id: currentUser.id.toString(),
+          username: `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.email || '',
+          email: currentUser.email || ''
+        };
+        dispatch(loginAction(user));
       }
     };
 

@@ -28,6 +28,7 @@ import {
   People as PeopleIcon,
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
+  Security as SecurityIcon,
 } from '@mui/icons-material';
 import AssignmentIcon from '@mui/icons-material/Assignment'; 
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -71,6 +72,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       text: 'Users',
       icon: <PeopleIcon />,
       path: '/users',
+    },
+    {
+      text: 'Roles',
+      icon: <SecurityIcon />,
+      path: '/roles',
     },
     {
       text: 'Catalogs',

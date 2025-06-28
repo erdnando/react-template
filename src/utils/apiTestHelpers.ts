@@ -3,10 +3,9 @@
 
 import { fetchData, postData } from '../services/api';
 import { login } from '../services/auth';
-import { getUsers, createUser, CreateUserDto } from '../services/userService';
-
-import { getCatalogs, createCatalog, CreateCatalogDto } from '../services/catalogService';
-import { getTasks, createTask, CreateTaskDto } from '../services/taskService';
+import { userService, CreateUserDto, UserStatus } from '../services/userApiService';
+import { catalogService, CreateCatalogDto } from '../services/catalogService';
+import { taskService, CreateTaskDto } from '../services/taskService';
 
 interface WindowWithApiTests extends Window {
   apiTests: {
@@ -67,9 +66,9 @@ interface WindowWithApiTests extends Window {
 
   // User service tests
   async testGetUsers() {
-    console.log('Testing getUsers...');
+    console.log('Testing userService.getUsers...');
     try {
-      const result = await getUsers();
+      const result = await userService.getUsers();
       console.log('✅ Users fetched:', result);
       return result;
     } catch (error) {
@@ -80,15 +79,19 @@ interface WindowWithApiTests extends Window {
 
   async testCreateUser(userData?: CreateUserDto) {
     const defaultUser: CreateUserDto = {
-      name: 'Test User',
+      firstName: 'Test',
+      lastName: 'User',
       email: 'test@example.com',
-      password: 'test1234'
+      password: 'test1234',
+      status: UserStatus.Active,
+      roleId: 1,
+      avatar: null
     };
     const user = userData || defaultUser;
     
-    console.log('Testing createUser...', user);
+    console.log('Testing userService.createUser...', user);
     try {
-      const result = await createUser(user);
+      const result = await userService.createUser(user);
       console.log('✅ User created:', result);
       return result;
     } catch (error) {
@@ -99,9 +102,9 @@ interface WindowWithApiTests extends Window {
 
   // Task service tests
   async testGetTasks() {
-    console.log('Testing getTasks...');
+    console.log('Testing taskService.getTasks...');
     try {
-      const result = await getTasks();
+      const result = await taskService.getTasks();
       console.log('✅ Tasks fetched:', result);
       return result;
     } catch (error) {
@@ -119,9 +122,9 @@ interface WindowWithApiTests extends Window {
     };
     const task = taskData || defaultTask;
     
-    console.log('Testing createTask...', task);
+    console.log('Testing taskService.createTask...', task);
     try {
-      const result = await createTask(task);
+      const result = await taskService.createTask(task);
       console.log('✅ Task created:', result);
       return result;
     } catch (error) {
@@ -132,9 +135,9 @@ interface WindowWithApiTests extends Window {
 
   // Catalog service tests
   async testGetCatalogs() {
-    console.log('Testing getCatalogs...');
+    console.log('Testing catalogService.getCatalogs...');
     try {
-      const result = await getCatalogs();
+      const result = await catalogService.getCatalogs();
       console.log('✅ Catalogs fetched:', result);
       return result;
     } catch (error) {
@@ -148,14 +151,16 @@ interface WindowWithApiTests extends Window {
       title: 'Test Catalog',
       description: 'This is a test catalog',
       category: 'Electronics',
+      image: null,
+      rating: 4.5,
       price: 100,
       inStock: true
     };
     const catalog = catalogData || defaultCatalog;
     
-    console.log('Testing createCatalog...', catalog);
+    console.log('Testing catalogService.createCatalog...', catalog);
     try {
-      const result = await createCatalog(catalog);
+      const result = await catalogService.createCatalog(catalog);
       console.log('✅ Catalog created:', result);
       return result;
     } catch (error) {

@@ -36,7 +36,7 @@ const normalizeUser = (rawUser: Record<string, unknown>): { id: string; username
 };
 
 export const login = async (credentials: AuthCredentials): Promise<AuthResponse> => {
-  const response = await axios.post(`${API_URL}/auth/login`, credentials);
+  const response = await axios.post(`${API_URL}/Users/login`, credentials);
   
   // El backend devuelve { success, message, data: { token, user } }
   const { token, user: rawUser } = response.data.data;

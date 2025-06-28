@@ -5,6 +5,7 @@ import Home from '../../../pages/Home/Home';
 import Catalogs from '../../../pages/Catalogs/Catalogs';
 import Tasks from '../../../pages/Tasks/Tasks';
 import Users from '../../../pages/Users/Users';
+import Roles from '../../../pages/Roles/Roles';
 import Permissions from '../../../pages/Permissions/Permissions';
 
 export const AppLayout: React.FC = () => {
@@ -16,6 +17,7 @@ export const AppLayout: React.FC = () => {
           <Route path="/catalogs" element={<Catalogs />} />
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/users" element={<Users />} />
+          <Route path="/roles" element={<Roles />} />
           <Route path="/permissions" element={<Permissions />} />
           {/* Redirect any other routes to home when authenticated */}
           <Route path="*" element={<Home />} />

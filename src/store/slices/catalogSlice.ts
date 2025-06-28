@@ -28,10 +28,10 @@ const initialState: CatalogState = {
 
 const mapCatalogDtoToCatalog = (dto: catalogService.CatalogDto): Catalog => ({
   id: dto.id,
-  title: dto.title,
-  description: dto.description,
-  category: dto.category,
-  image: dto.image,
+  title: dto.title || '',
+  description: dto.description || '',
+  category: dto.category || '',
+  image: dto.image || undefined,
   rating: dto.rating ?? 0,
   price: dto.price,
   inStock: dto.inStock,
@@ -41,8 +41,8 @@ const mapCatalogDtoToCatalog = (dto: catalogService.CatalogDto): Catalog => ({
 
 export const fetchCatalogs = createAsyncThunk('catalog/fetchAll', async (_, thunkAPI) => {
   try {
-    const data = await catalogService.getCatalogs();
-    return data.map(mapCatalogDtoToCatalog);
+    const response = await catalogService.getCatalogs();
+    return response.data.map(mapCatalogDtoToCatalog);
   } catch (err: unknown) {
     return thunkAPI.rejectWithValue((err as Error).message || 'Error fetching catalogs');
   }
@@ -50,8 +50,8 @@ export const fetchCatalogs = createAsyncThunk('catalog/fetchAll', async (_, thun
 
 export const createCatalogAsync = createAsyncThunk('catalog/create', async (catalog: catalogService.CreateCatalogDto, thunkAPI) => {
   try {
-    const data = await catalogService.createCatalog(catalog);
-    return mapCatalogDtoToCatalog(data);
+    const response = await catalogService.createCatalog(catalog);
+    return mapCatalogDtoToCatalog(response.data);
   } catch (err: unknown) {
     return thunkAPI.rejectWithValue((err as Error).message || 'Error creating catalog');
   }
@@ -59,8 +59,8 @@ export const createCatalogAsync = createAsyncThunk('catalog/create', async (cata
 
 export const updateCatalogAsync = createAsyncThunk('catalog/update', async ({ id, data }: { id: number, data: catalogService.UpdateCatalogDto }, thunkAPI) => {
   try {
-    const updated = await catalogService.updateCatalog(id, data);
-    return mapCatalogDtoToCatalog(updated);
+    const response = await catalogService.updateCatalog(id, data);
+    return mapCatalogDtoToCatalog(response.data);
   } catch (err: unknown) {
     return thunkAPI.rejectWithValue((err as Error).message || 'Error updating catalog');
   }

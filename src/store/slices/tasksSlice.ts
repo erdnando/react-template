@@ -30,19 +30,19 @@ const initialState: TasksState = {
 // Helper to map TaskDto to Task
 const mapTaskDtoToTask = (dto: taskService.TaskDto): Task => ({
   id: dto.id,
-  title: dto.title,
-  description: dto.description,
+  title: dto.title || '',
+  description: dto.description || '',
   completed: dto.completed,
-  priority: dto.priority as 'low' | 'medium' | 'high',
+  priority: (dto.priority as 'low' | 'medium' | 'high') || 'medium',
   userId: dto.userId,
-  userName: dto.userName,
+  userName: dto.userName || undefined,
 });
 
 // Thunks CRUD
 export const fetchTasks = createAsyncThunk('tasks/fetchAll', async (_, thunkAPI) => {
   try {
-    const data = await taskService.getTasks();
-    return data.map(mapTaskDtoToTask);
+    const response = await taskService.getTasks();
+    return response.data.map(mapTaskDtoToTask);
   } catch (err: unknown) {
     return thunkAPI.rejectWithValue((err as Error).message || 'Error fetching tasks');
   }
@@ -50,8 +50,8 @@ export const fetchTasks = createAsyncThunk('tasks/fetchAll', async (_, thunkAPI)
 
 export const fetchTaskById = createAsyncThunk('tasks/fetchById', async (id: number, thunkAPI) => {
   try {
-    const data = await taskService.getTaskById(id);
-    return mapTaskDtoToTask(data);
+    const response = await taskService.getTaskById(id);
+    return mapTaskDtoToTask(response.data);
   } catch (err: unknown) {
     return thunkAPI.rejectWithValue((err as Error).message || 'Error fetching task');
   }
@@ -59,8 +59,8 @@ export const fetchTaskById = createAsyncThunk('tasks/fetchById', async (id: numb
 
 export const createTaskAsync = createAsyncThunk('tasks/create', async (task: taskService.CreateTaskDto, thunkAPI) => {
   try {
-    const data = await taskService.createTask(task);
-    return mapTaskDtoToTask(data);
+    const response = await taskService.createTask(task);
+    return mapTaskDtoToTask(response.data);
   } catch (err: unknown) {
     return thunkAPI.rejectWithValue((err as Error).message || 'Error creating task');
   }
@@ -68,8 +68,8 @@ export const createTaskAsync = createAsyncThunk('tasks/create', async (task: tas
 
 export const updateTaskAsync = createAsyncThunk('tasks/update', async ({ id, data }: { id: number, data: taskService.UpdateTaskDto }, thunkAPI) => {
   try {
-    const updated = await taskService.updateTask(id, data);
-    return mapTaskDtoToTask(updated);
+    const response = await taskService.updateTask(id, data);
+    return mapTaskDtoToTask(response.data);
   } catch (err: unknown) {
     return thunkAPI.rejectWithValue((err as Error).message || 'Error updating task');
   }
