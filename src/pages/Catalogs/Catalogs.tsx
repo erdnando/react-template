@@ -5,7 +5,6 @@ import {
   CardContent,
   CardMedia,
   Typography,
-  Container,
   Button,
   Chip,
   TextField,
@@ -158,25 +157,25 @@ const Catalogs: React.FC = () => {
   // Loading y error UI
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
+      <Box sx={{ p: { xs: 2, sm: 3 } }}>
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '40vh' }}>
           <Typography variant="h6">Loading catalogs...</Typography>
         </Box>
-      </Container>
+      </Box>
     );
   }
   if (error) {
     return (
-      <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
+      <Box sx={{ p: { xs: 2, sm: 3 } }}>
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '40vh' }}>
           <Typography variant="h6" color="error">{error}</Typography>
         </Box>
-      </Container>
+      </Box>
     );
   }
 
   return (
-    <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
+    <Box sx={{ p: { xs: 2, sm: 3 } }}>
       <Box sx={{ mb: 4 }}>
         <Typography variant="h5" component="h1" gutterBottom>
           Product Catalog
@@ -555,7 +554,7 @@ const Catalogs: React.FC = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Container>
+    </Box>
   );
 };
 

@@ -4,7 +4,6 @@ import {
   Typography,
   Card,
   CardContent,
-  Container,
   Button,
   Paper,
   Avatar,
@@ -21,7 +20,7 @@ import {
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { RootState } from '../../store/store';
-import ApiTester from '../../components/ApiTester';
+import { ApiTest } from '../../components/ApiTest';
 import UserInfo from '../../components/UserInfo';
 
 const Home: React.FC = () => {
@@ -65,7 +64,7 @@ const Home: React.FC = () => {
   ];
 
   return (
-    <Container maxWidth="lg">
+    <Box sx={{ p: { xs: 2, sm: 3 } }}>
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" component="h1" gutterBottom>
           Welcome{isAuthenticated && user ? `, ${user.username}` : ''}!
@@ -253,11 +252,11 @@ const Home: React.FC = () => {
           </Box>
           
           <Collapse in={showApiTester}>
-            <ApiTester />
+            <ApiTest />
           </Collapse>
         </Paper>
       </Box>
-    </Container>
+    </Box>
   );
 };
 

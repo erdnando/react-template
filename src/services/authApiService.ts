@@ -13,11 +13,32 @@ export interface LoginResponseDto {
   user: UserDto;
 }
 
+// Forgot Password DTOs - Adaptado a la arquitectura superior del backend
+export interface ForgotPasswordDto {
+  email: string | null;
+}
+
+export interface ResetPasswordDto {
+  token: string | null;
+  newPassword: string | null;
+  confirmPassword: string | null; // Agregado para validación doble
+}
+
 // Auth service functions
 export const authService = {
   // Login user
   login: (credentials: LoginDto): Promise<ApiResponse<LoginResponseDto>> => {
     return apiRequest.post<LoginResponseDto>('/Users/login', credentials);
+  },
+
+  // Forgot Password - Request reset token
+  forgotPassword: (data: ForgotPasswordDto): Promise<ApiResponse<{ message: string }>> => {
+    return apiRequest.post<{ message: string }>('/Users/forgot-password', data);
+  },
+
+  // Reset Password - Reset with token
+  resetPassword: (data: ResetPasswordDto): Promise<ApiResponse<{ message: string }>> => {
+    return apiRequest.post<{ message: string }>('/Users/reset-password', data);
   },
 
   // Logout user (client-side only)

@@ -88,6 +88,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       icon: <AssignmentIcon />,
       path: '/permissions',
     },
+    {
+      text: 'Admin Utilities',
+      icon: <SecurityIcon />,
+      path: '/admin/utils',
+      adminOnly: true,
+    },
   ];
 
   const handleDrawerToggle = () => {
@@ -133,7 +139,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Navigation items */}
       <List sx={{ flexGrow: 1, pt: 2.5, px: 0.5 }}>
-        {menuItems.map((item) => (
+        {menuItems
+          .filter(item => !item.adminOnly || user?.email === 'admin@sistema.com')
+          .map((item) => (
           <ListItem key={item.text} disablePadding sx={{ display: 'block' }}>
             <ListItemButton
               component={Link}

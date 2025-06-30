@@ -24,10 +24,10 @@ export interface UserPermissionDto {
   createdAt: string;
 }
 
-// User Status enum (0=Inactive, 1=Active)
+// User Status enum (0=Active, 1=Inactive) - Corrected based on API behavior
 export enum UserStatus {
-  Inactive = 0,
-  Active = 1
+  Active = 0,
+  Inactive = 1
 }
 
 // Main UserDto based on the API definition

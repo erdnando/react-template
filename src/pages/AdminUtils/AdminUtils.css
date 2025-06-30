@@ -1,0 +1,22 @@
+.admin-utils-page {
+  padding: 0;
+}
+
+.access-denied {
+  text-align: center;
+  padding: 2rem;
+  margin: 2rem auto;
+  max-width: 600px;
+  background-color: #fff3cd;
+  border: 1px solid #ffeeba;
+  border-radius: 4px;
+}
+
+.access-denied h2 {
+  color: #856404;
+  margin-bottom: 1rem;
+}
+
+.access-denied p {
+  color: #856404;
+}

@@ -31,6 +31,7 @@ import {
   Close as CloseIcon,
 } from '@mui/icons-material';
 import { usePermissionsApi } from '../../hooks';
+import { VALIDATION_LIMITS } from '../../utils/validationConstants';
 
 interface RoleManagementProps {
   isModal?: boolean;
@@ -52,6 +53,10 @@ const RoleManagement: React.FC<RoleManagementProps> = ({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [roleToDelete, setRoleToDelete] = useState<{ id: number, name: string, usersCount: number } | null>(null);
   const [snackbar, setSnackbar] = useState<string | null>(null);
+
+  // Use centralized validation constants
+  const ROLE_NAME_MIN = VALIDATION_LIMITS.ROLE_NAME_MIN;
+  const ROLE_NAME_MAX = VALIDATION_LIMITS.ROLE_NAME_MAX;
 
   const {
     users,
@@ -111,9 +116,24 @@ const RoleManagement: React.FC<RoleManagementProps> = ({
   };
 
   const handleSubmit = async () => {
-    if (!selectedRole?.name.trim()) return;
+    if (!selectedRole?.name.trim()) {
+      setSnackbar('Role name is required');
+      return;
+    }
 
     const roleName = selectedRole.name.trim();
+    
+    // Validar longitud mínima
+    if (roleName.length < ROLE_NAME_MIN) {
+      setSnackbar(`Role name must be at least ${ROLE_NAME_MIN} characters long`);
+      return;
+    }
+    
+    // Validar longitud máxima
+    if (roleName.length > ROLE_NAME_MAX) {
+      setSnackbar(`Role name cannot exceed ${ROLE_NAME_MAX} characters`);
+      return;
+    }
     
     // Validar que el nombre del rol no exista ya
     const existingRole = roles.find(r => 
@@ -479,6 +499,33 @@ const RoleManagement: React.FC<RoleManagementProps> = ({
               value={selectedRole?.name || ''}
               onChange={(e) => setSelectedRole(prev => prev ? { ...prev, name: e.target.value } : null)}
               size="small"
+              error={
+                selectedRole?.name !== undefined && 
+                selectedRole.name.trim().length > 0 && 
+                (selectedRole.name.trim().length < ROLE_NAME_MIN || selectedRole.name.trim().length > ROLE_NAME_MAX)
+              }
+              helperText={
+                selectedRole?.name !== undefined && selectedRole.name.trim().length > 0 && selectedRole.name.trim().length < ROLE_NAME_MIN
+                  ? `Role name must be at least ${ROLE_NAME_MIN} characters long`
+                  : selectedRole?.name !== undefined && selectedRole.name.trim().length > ROLE_NAME_MAX
+                  ? `Role name cannot exceed ${ROLE_NAME_MAX} characters`
+                  : selectedRole?.name && selectedRole.name.trim().length >= ROLE_NAME_MIN && selectedRole.name.trim().length <= ROLE_NAME_MAX
+                  ? '✓ Valid role name'
+                  : `Enter a role name (${ROLE_NAME_MIN}-${ROLE_NAME_MAX} characters)`
+              }
+              required
+              placeholder="Enter role name"
+              inputProps={{ maxLength: ROLE_NAME_MAX }}
+              FormHelperTextProps={{
+                sx: {
+                  color: selectedRole?.name !== undefined && selectedRole.name.trim().length > 0 && 
+                         (selectedRole.name.trim().length < ROLE_NAME_MIN || selectedRole.name.trim().length > ROLE_NAME_MAX)
+                    ? 'error.main'
+                    : selectedRole?.name && selectedRole.name.trim().length >= ROLE_NAME_MIN && selectedRole.name.trim().length <= ROLE_NAME_MAX
+                    ? 'success.main'
+                    : 'text.secondary'
+                }
+              }}
             />
           </Box>
         </DialogContent>
@@ -487,7 +534,11 @@ const RoleManagement: React.FC<RoleManagementProps> = ({
           <Button 
             onClick={handleSubmit} 
             variant="contained"
-            disabled={!selectedRole?.name.trim()}
+            disabled={
+              !selectedRole?.name.trim() || 
+              selectedRole.name.trim().length < ROLE_NAME_MIN || 
+              selectedRole.name.trim().length > ROLE_NAME_MAX
+            }
           >
             {selectedRole?.id ? 'Update' : 'Create'}
           </Button>

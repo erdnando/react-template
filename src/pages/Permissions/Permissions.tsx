@@ -30,8 +30,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import GroupIcon from '@mui/icons-material/Group';
 import SecurityIcon from '@mui/icons-material/Security';
-import DeleteIcon from '@mui/icons-material/Delete';
-import { usePermissionsApi } from '../../hooks';
+import { usePermissionsApi } from '../../hooks/usePermissionsApi';
 import { UserManagement, RoleManagement } from '../../components/common';
 
 const Permissions: React.FC = () => {
@@ -43,7 +42,6 @@ const Permissions: React.FC = () => {
     userModulePermissions,
     loading,
     error,
-    deleteUser,
     deleteRole,
     saveUserPermissions,
     setUserModulePermissions
@@ -52,13 +50,35 @@ const Permissions: React.FC = () => {
   const [openUsersManagement, setOpenUsersManagement] = useState(false);
   const [openRolesManagement, setOpenRolesManagement] = useState(false);
 
-  // Permisos posibles sobre cada módulo
-  const rolePermissionTypes = ["Admin", "Delete", "Write", "Read"];
-  const rolePermissionIcons: Record<'Admin' | 'Delete' | 'Write' | 'Read', JSX.Element> = {
+  // Permisos posibles sobre cada módulo - Homologado: Write + Delete = Editar
+  const rolePermissionTypes = ["Admin", "Editar", "Read"];
+  const rolePermissionIcons: Record<'Admin' | 'Editar' | 'Read', JSX.Element> = {
     Admin: <Tooltip title="Acceso total"><CheckCircleIcon color="error" fontSize="small" /></Tooltip>,
-    Delete: <Tooltip title="Puede eliminar"><DeleteIcon color="warning" fontSize="small" /></Tooltip>,
-    Write: <Tooltip title="Puede editar"><EditIcon color="primary" fontSize="small" /></Tooltip>,
+    Editar: <Tooltip title="Puede editar y eliminar"><EditIcon color="primary" fontSize="small" /></Tooltip>,
     Read: <Tooltip title="Solo lectura"><VisibilityIcon color="success" fontSize="small" /></Tooltip>,
+  };
+
+  // Funciones de conversión entre frontend "Editar" y backend "Write"/"Delete"
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const convertBackendToFrontend = (backendType: 'Admin' | 'Delete' | 'Write' | 'Read' | 'None'): 'Admin' | 'Editar' | 'Read' | 'None' => {
+    switch (backendType) {
+      case 'Admin': return 'Admin';
+      case 'Delete':
+      case 'Write': return 'Editar'; // Combinamos Write y Delete en "Editar"
+      case 'Read': return 'Read';
+      case 'None':
+      default: return 'None';
+    }
+  };
+
+  const convertFrontendToBackend = (frontendType: 'Admin' | 'Editar' | 'Read' | 'None'): 'Admin' | 'Delete' | 'Write' | 'Read' | 'None' => {
+    switch (frontendType) {
+      case 'Admin': return 'Admin';
+      case 'Editar': return 'Delete'; // "Editar" se convierte a "Delete" (nivel más alto)
+      case 'Read': return 'Read';
+      case 'None':
+      default: return 'None';
+    }
   };
 
   // Estados para gestión de permisos
@@ -148,7 +168,7 @@ const Permissions: React.FC = () => {
           ...prev[user],
           [moduleCode]: {
             enabled: prev[user]?.[moduleCode]?.enabled ?? false,
-            type: type as 'Admin' | 'Delete' | 'Write' | 'Read' | 'None',
+            type: convertFrontendToBackend(type as 'Admin' | 'Editar' | 'Read' | 'None'),
             permissionId: prev[user]?.[moduleCode]?.permissionId
           }
         }
@@ -183,41 +203,9 @@ const Permissions: React.FC = () => {
   };
 
   // Función auxiliar para renderizar la lista de usuarios
-  // Handler para eliminar usuario con confirmación personalizada
-  // Estado para el diálogo de confirmación de borrado
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<{ id: number, name: string, email: string } | null>(null);
-
   // Estado para el diálogo de confirmación de eliminación de rol
   const [deleteRoleDialogOpen, setDeleteRoleDialogOpen] = useState(false);
   const [roleToDelete, setRoleToDelete] = useState<{ id: string, name: string, usersCount: number } | null>(null);
-
-  const handleDeleteUser = (userId: number) => {
-    const user = users.find(u => u.id === userId);
-    if (!user) return;
-    setUserToDelete({ id: user.id, name: user.name, email: user.email });
-    setDeleteDialogOpen(true);
-  };
-
-  const confirmDeleteUser = async () => {
-    if (userToDelete) {
-      try {
-        await deleteUser(userToDelete.id);
-        setActiveUser(prev => (prev === userToDelete.name ? null : prev));
-        setSnackbar('Usuario eliminado exitosamente');
-      } catch (error) {
-        setSnackbar('Error al eliminar usuario');
-      } finally {
-        setDeleteDialogOpen(false);
-        setUserToDelete(null);
-      }
-    }
-  };
-
-  const cancelDeleteUser = () => {
-    setDeleteDialogOpen(false);
-    setUserToDelete(null);
-  };
 
   const confirmDeleteRole = async () => {
     if (roleToDelete) {
@@ -336,10 +324,6 @@ const Permissions: React.FC = () => {
                           </span>
                         }
                       />
-                      {/* Botón de editar usuario ahora se maneja en el modal UserManagement */}
-                      <IconButton size="small" color="error" onClick={() => handleDeleteUser(fullUser.id)} title="Eliminar usuario">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
-                      </IconButton>
                     </ListItem>
                   );
                 })
@@ -538,7 +522,12 @@ const Permissions: React.FC = () => {
                             />
                           </ListItem>
                           {filteredModules.map((module) => {
-                            const perm = userModulePermissions[activeUser]?.[module.code] || { enabled: false, type: 'Read' };
+                            const backendPerm = userModulePermissions[activeUser]?.[module.code] || { enabled: false, type: 'Read' };
+                            // Convertir el tipo del backend al frontend para mostrar
+                            const perm = {
+                              ...backendPerm,
+                              type: convertBackendToFrontend(backendPerm.type as 'Admin' | 'Delete' | 'Write' | 'Read' | 'None')
+                            };
                             return (
                               <ListItem
                                 key={module.id}
@@ -568,12 +557,12 @@ const Permissions: React.FC = () => {
                                     const isSelected = perm.type === type && perm.enabled;
                                     let chipColor: string | undefined = undefined;
                                     if (isSelected) {
-                                      chipColor = type === 'Admin' ? '#f44336' : type === 'Delete' ? '#ff9800' : type === 'Write' ? '#1976d2' : '#2e7d32';
+                                      chipColor = type === 'Admin' ? '#f44336' : type === 'Editar' ? '#1976d2' : '#2e7d32';
                                     }
-                                    const vividColor = type === 'Admin' ? '#fff5f5' : type === 'Delete' ? '#fff3e0' : type === 'Write' ? '#f5fafd' : '#f5fcf7';
-                                    const vividText = type === 'Admin' ? '#b71c1c' : type === 'Delete' ? '#ef6c00' : type === 'Write' ? '#1976d2' : '#2e7d32';
+                                    const vividColor = type === 'Admin' ? '#fff5f5' : type === 'Editar' ? '#f5fafd' : '#f5fcf7';
+                                    const vividText = type === 'Admin' ? '#b71c1c' : type === 'Editar' ? '#1976d2' : '#2e7d32';
                                     return (
-                                      <Tooltip key={type} title={type === 'Admin' ? 'Acceso total' : type === 'Delete' ? 'Puede eliminar' : type === 'Write' ? 'Puede editar' : 'Solo lectura'}>
+                                      <Tooltip key={type} title={type === 'Admin' ? 'Acceso total' : type === 'Editar' ? 'Puede editar y eliminar' : 'Solo lectura'}>
                                         <Box
                                           sx={{
                                             display: 'flex',
@@ -594,8 +583,8 @@ const Permissions: React.FC = () => {
                                             checked={isSelected}
                                             disabled={!perm.enabled || !canEditPermissions}
                                             onChange={() => handleModuleTypeChange(activeUser, module.code, type)}
-                                            icon={rolePermissionIcons[type as 'Admin' | 'Delete' | 'Write' | 'Read']}
-                                            checkedIcon={rolePermissionIcons[type as 'Admin' | 'Delete' | 'Write' | 'Read']}
+                                            icon={rolePermissionIcons[type as 'Admin' | 'Editar' | 'Read']}
+                                            checkedIcon={rolePermissionIcons[type as 'Admin' | 'Editar' | 'Read']}
                                             sx={{
                                               p: 0.5,
                                               color: isSelected ? '#fff' : (perm.enabled ? vividText : '#bdbdbd'),
@@ -641,21 +630,6 @@ const Permissions: React.FC = () => {
       </Box>
 
       {/* Los modales de gestión de usuarios ahora son manejados por el componente UserManagement */}
-
-      {/* Diálogo de confirmación para eliminar usuario */}
-      <Dialog open={deleteDialogOpen} onClose={cancelDeleteUser}>
-        <DialogTitle>Eliminar usuario</DialogTitle>
-        <DialogContent>
-          <Typography>¿Estás seguro de que deseas eliminar al usuario <b>{userToDelete?.name}</b> ({userToDelete?.email})?</Typography>
-          <Typography color="error" sx={{ mt: 1 }}>
-            Esta acción es permanente y no se puede deshacer.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={cancelDeleteUser} color="primary">Cancelar</Button>
-          <Button onClick={confirmDeleteUser} color="error" variant="contained">Eliminar</Button>
-        </DialogActions>
-      </Dialog>
 
       {/* Diálogo de confirmación para eliminar rol */}
       <Dialog open={deleteRoleDialogOpen} onClose={cancelDeleteRole}>

@@ -29,7 +29,6 @@ import {
   DialogContentText,
   DialogActions,
   SelectChangeEvent,
-  Container,
   Chip,
   Fab,
   useTheme,
@@ -38,6 +37,7 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
+import { VALIDATION_LIMITS } from '../../utils/validationConstants';
 
 const Tasks: React.FC = () => {
   const { tasks, loading, error } = useSelector((state: RootState) => state.tasks);
@@ -94,6 +94,38 @@ const Tasks: React.FC = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    
+    // Real-time validation
+    const newErrors = { ...errors };
+    const { name, value } = e.target;
+    
+    if (name === 'title') {
+      if (!value.trim()) {
+        newErrors.title = 'Title is required';
+      } else if (value.length > VALIDATION_LIMITS.TASK_TITLE_MAX) {
+        newErrors.title = `Title cannot exceed ${VALIDATION_LIMITS.TASK_TITLE_MAX} characters`;
+      } else {
+        // Check for duplicates
+        const duplicate = tasks.find(
+          t => t.title.trim().toLowerCase() === value.trim().toLowerCase() && t.id !== editingId
+        );
+        if (duplicate) {
+          newErrors.title = 'A task with this title already exists';
+        } else {
+          newErrors.title = '';
+        }
+      }
+    } else if (name === 'description') {
+      if (!value.trim()) {
+        newErrors.description = 'Description is required';
+      } else if (value.length > VALIDATION_LIMITS.TASK_DESCRIPTION_MAX) {
+        newErrors.description = `Description cannot exceed ${VALIDATION_LIMITS.TASK_DESCRIPTION_MAX} characters`;
+      } else {
+        newErrors.description = '';
+      }
+    }
+    
+    setErrors(newErrors);
   };
 
   const handleSelectChange = (e: SelectChangeEvent) => {
@@ -103,17 +135,27 @@ const Tasks: React.FC = () => {
   // Validaciones avanzadas
   const validate = () => {
     const newErrors: typeof errors = {};
-    if (!form.title.trim()) newErrors.title = 'Title is required';
-    if (form.title.length > 40) newErrors.title = 'Title must be 40 characters or less';
-    if (!form.description.trim()) newErrors.description = 'Description is required';
-    if (form.description.length > 100) newErrors.description = 'Description must be 100 characters or less';
-    // Evitar duplicados
-    const duplicate = tasks.find(
-      t =>
-        t.title.trim().toLowerCase() === form.title.trim().toLowerCase() &&
-        t.id !== editingId
-    );
-    if (duplicate) newErrors.title = 'A task with this title already exists';
+    
+    if (!form.title.trim()) {
+      newErrors.title = 'Title is required';
+    } else if (form.title.length > VALIDATION_LIMITS.TASK_TITLE_MAX) {
+      newErrors.title = `Title cannot exceed ${VALIDATION_LIMITS.TASK_TITLE_MAX} characters`;
+    } else {
+      // Check for duplicates
+      const duplicate = tasks.find(
+        t => t.title.trim().toLowerCase() === form.title.trim().toLowerCase() && t.id !== editingId
+      );
+      if (duplicate) {
+        newErrors.title = 'A task with this title already exists';
+      }
+    }
+    
+    if (!form.description.trim()) {
+      newErrors.description = 'Description is required';
+    } else if (form.description.length > VALIDATION_LIMITS.TASK_DESCRIPTION_MAX) {
+      newErrors.description = `Description cannot exceed ${VALIDATION_LIMITS.TASK_DESCRIPTION_MAX} characters`;
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -180,25 +222,25 @@ const Tasks: React.FC = () => {
   // Loading and error UI
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
+      <Box sx={{ p: { xs: 2, sm: 3 } }}>
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '40vh' }}>
           <Typography variant="h6">Loading tasks...</Typography>
         </Box>
-      </Container>
+      </Box>
     );
   }
   if (error) {
     return (
-      <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
+      <Box sx={{ p: { xs: 2, sm: 3 } }}>
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '40vh' }}>
           <Alert severity="error">{error}</Alert>
         </Box>
-      </Container>
+      </Box>
     );
   }
 
   return (
-    <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
+    <Box sx={{ p: { xs: 2, sm: 3 } }}>
       <Box sx={{ mb: 4 }}>
         <Typography variant="h5" component="h1" gutterBottom>
           Task Management
@@ -284,7 +326,8 @@ const Tasks: React.FC = () => {
                 size="small"
                 sx={{ flex: 1 }}
                 error={!!errors.title}
-                helperText={errors.title}
+                helperText={errors.title || `Maximum ${VALIDATION_LIMITS.TASK_TITLE_MAX} characters`}
+                inputProps={{ maxLength: VALIDATION_LIMITS.TASK_TITLE_MAX }}
               />
               <TextField
                 name="description"
@@ -295,7 +338,10 @@ const Tasks: React.FC = () => {
                 size="small"
                 sx={{ flex: 2 }}
                 error={!!errors.description}
-                helperText={errors.description}
+                helperText={errors.description || `Maximum ${VALIDATION_LIMITS.TASK_DESCRIPTION_MAX} characters`}
+                inputProps={{ maxLength: VALIDATION_LIMITS.TASK_DESCRIPTION_MAX }}
+                multiline
+                maxRows={3}
               />
               <Select
                 name="priority"
@@ -470,7 +516,7 @@ const Tasks: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
-    </Container>
+    </Box>
   );
 };
 

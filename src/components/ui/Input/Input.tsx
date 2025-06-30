@@ -8,6 +8,7 @@ interface InputProps {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   disabled?: boolean;
   className?: string;
+  maxLength?: number;
 }
 
 const Input: React.FC<InputProps> = ({
@@ -16,7 +17,8 @@ const Input: React.FC<InputProps> = ({
   value,
   onChange,
   disabled = false,
-  className = ''
+  className = '',
+  maxLength
 }) => {
   return (
     <input
@@ -26,6 +28,7 @@ const Input: React.FC<InputProps> = ({
       onChange={onChange}
       disabled={disabled}
       className={`input ${className}`.trim()}
+      maxLength={maxLength}
     />
   );
 };

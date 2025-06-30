@@ -10,7 +10,7 @@ export interface ApiResponse<T> {
 }
 
 // API Configuration
-const API_BASE_URL = 'http://localhost:5096/api';
+const API_BASE_URL = 'http://localhost:5000/api';
 
 // Create axios instance with default configuration
 const apiClient: AxiosInstance = axios.create({
@@ -56,7 +56,18 @@ export const apiRequest = {
     console.log('API GET:', `${API_BASE_URL}${url}`);
     return apiClient.get(url).then((response) => {
       console.log('API GET Response:', response.data);
+      // Ensure the response always has a success property
+      if (response.data && response.data.success === undefined) {
+        response.data.success = true;
+      }
       return response.data;
+    }).catch(error => {
+      console.error('API GET Error:', error);
+      return {
+        success: false,
+        message: error.message || 'Network error occurred',
+        data: {} as T
+      };
     });
   },
   
