@@ -53,9 +53,9 @@ apiClient.interceptors.response.use(
 // Generic API methods
 export const apiRequest = {
   get: <T>(url: string): Promise<ApiResponse<T>> => {
-    console.log('API GET:', `${API_BASE_URL}${url}`);
+    // console.log('API GET:', `${API_BASE_URL}${url}`);
     return apiClient.get(url).then((response) => {
-      console.log('API GET Response:', response.data);
+      // console.log('API GET Response:', response.data);
       // Ensure the response always has a success property
       if (response.data && response.data.success === undefined) {
         response.data.success = true;
@@ -72,9 +72,7 @@ export const apiRequest = {
   },
   
   post: <T>(url: string, data?: unknown): Promise<ApiResponse<T>> => {
-    console.log('API POST:', `${API_BASE_URL}${url}`, data);
     return apiClient.post(url, data).then((response) => {
-      console.log('API POST Response:', response.data);
       return response.data;
     }).catch((error) => {
       console.error('API POST Error:', error.response?.data || error.message);

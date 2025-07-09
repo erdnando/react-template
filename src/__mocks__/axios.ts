@@ -123,7 +123,7 @@ const createResponse = (data: unknown) => ({
 });
 
 const mockGet = jest.fn((url: string) => {
-  console.log('Mock axios.get called with:', url);
+  // Mock axios.get called
   
   // Handle API endpoint patterns
   if (url.includes('/api/users') || url.includes('/users')) {
@@ -147,7 +147,7 @@ const mockGet = jest.fn((url: string) => {
 });
 
 const mockPost = jest.fn((url: string, data: Record<string, unknown>) => {
-  console.log('Mock axios.post called with:', url, data);
+  // Mock axios.post called
   
   if (url.includes('/api/users') || url.includes('/users')) {
     const newUser = { id: Date.now(), ...data, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
@@ -166,7 +166,7 @@ const mockPost = jest.fn((url: string, data: Record<string, unknown>) => {
 });
 
 const mockPut = jest.fn((url: string, data: Record<string, unknown>) => {
-  console.log('Mock axios.put called with:', url, data);
+  // Mock axios.put called
   
   if (url.includes('/api/users/') || url.includes('/users/')) {
     const updatedUser = { ...data, updatedAt: new Date().toISOString() };
@@ -185,7 +185,7 @@ const mockPut = jest.fn((url: string, data: Record<string, unknown>) => {
 });
 
 const mockDelete = jest.fn((url: string) => {
-  console.log('Mock axios.delete called with:', url);
+  // Mock axios.delete called
   if (url.includes('/api/') || url.includes('/users/') || url.includes('/roles/') || url.includes('/permissions/')) {
     return Promise.resolve({ data: createResponse({ success: true }) });
   }

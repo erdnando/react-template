@@ -45,6 +45,8 @@ import {
   deleteCatalogAsync,
   Catalog
 } from '../../store/slices/catalogSlice';
+import { useUserPermissions } from '../../hooks/useUserPermissions';
+import { ReadOnlyBanner, ModuleLayout, ModuleHeader } from '../../components/ui';
 
 const Catalogs: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -67,6 +69,8 @@ const Catalogs: React.FC = () => {
 
   const dispatch: AppDispatch = useDispatch();
   const { catalogs, loading, error } = useSelector((state: RootState) => state.catalog);
+  const userPermissions = useUserPermissions();
+  const canEdit = userPermissions['catalogs']?.type === 'Edit';
 
   useEffect(() => {
     dispatch(fetchCatalogs());
@@ -175,15 +179,15 @@ const Catalogs: React.FC = () => {
   }
 
   return (
-    <Box sx={{ p: { xs: 2, sm: 3 } }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h5" component="h1" gutterBottom>
-          Product Catalog
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Browse and manage your product inventory
-        </Typography>
-      </Box>
+    <ModuleLayout>
+      {/* Título y subtítulo usando el componente ModuleHeader */}
+      <ModuleHeader
+        title="Product Catalog"
+        subtitle="Browse and manage your product inventory"
+      />
+      
+      {/* Read Only Banner */}
+      {!canEdit && <ReadOnlyBanner />}
 
       {/* Stats Cards */}
       <Box 
@@ -276,15 +280,17 @@ const Catalogs: React.FC = () => {
               ))}
             </Select>
           </FormControl>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon sx={{ fontSize: '1.1rem' }} />}
-            onClick={handleOpenAddDialog}
-            size="small"
-            sx={{ display: { xs: 'none', md: 'flex' }, minWidth: 'auto' }}
-          >
-            Add Product
-          </Button>
+          {canEdit && (
+            <Button
+              variant="contained"
+              startIcon={<AddIcon sx={{ fontSize: '1.1rem' }} />}
+              onClick={handleOpenAddDialog}
+              size="small"
+              sx={{ display: { xs: 'none', md: 'flex' }, minWidth: 'auto' }}
+            >
+              Add Product
+            </Button>
+          )}
         </Box>
       </Paper>
 
@@ -339,20 +345,24 @@ const Catalogs: React.FC = () => {
                   />
                 </CardContent>
                 <CardActions sx={{ p: 2, pt: 0 }}>
-                  <IconButton
-                    size="small"
-                    color="primary"
-                    onClick={() => handleOpenEditDialog(product)}
-                  >
-                    <EditIcon sx={{ fontSize: '1.1rem' }} />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    color="error"
-                    onClick={() => handleDelete(product.id)}
-                  >
-                    <DeleteIcon sx={{ fontSize: '1.1rem' }} />
-                  </IconButton>
+                  {canEdit && (
+                    <>
+                      <IconButton
+                        size="small"
+                        color="primary"
+                        onClick={() => handleOpenEditDialog(product)}
+                      >
+                        <EditIcon sx={{ fontSize: '1.1rem' }} />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => handleDelete(product.id)}
+                      >
+                        <DeleteIcon sx={{ fontSize: '1.1rem' }} />
+                      </IconButton>
+                    </>
+                  )}
                   <IconButton size="small" color="secondary">
                     <FavoriteIcon sx={{ fontSize: '1.1rem' }} />
                   </IconButton>
@@ -408,20 +418,24 @@ const Catalogs: React.FC = () => {
                     sx={{ fontSize: '0.7rem' }}
                   />
                   <Box sx={{ display: 'flex', gap: 0.5 }}>
-                    <IconButton
-                      size="small"
-                      color="primary"
-                      onClick={() => handleOpenEditDialog(product)}
-                    >
-                      <EditIcon sx={{ fontSize: '1rem' }} />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      color="error"
-                      onClick={() => handleDelete(product.id)}
-                    >
-                      <DeleteIcon sx={{ fontSize: '1rem' }} />
-                    </IconButton>
+                    {canEdit && (
+                      <>
+                        <IconButton
+                          size="small"
+                          color="primary"
+                          onClick={() => handleOpenEditDialog(product)}
+                        >
+                          <EditIcon sx={{ fontSize: '1rem' }} />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => handleDelete(product.id)}
+                        >
+                          <DeleteIcon sx={{ fontSize: '1rem' }} />
+                        </IconButton>
+                      </>
+                    )}
                   </Box>
                 </Box>
               </Box>
@@ -554,7 +568,7 @@ const Catalogs: React.FC = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Box>
+    </ModuleLayout>
   );
 };
 

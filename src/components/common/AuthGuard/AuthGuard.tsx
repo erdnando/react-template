@@ -23,7 +23,8 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
       const user = {
         id: currentUser.id.toString(),
         username: `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.email || '',
-        email: currentUser.email || ''
+        email: currentUser.email || '',
+        role: currentUser.role?.name === 'admin' ? 'admin' as const : 'user' as const,
       };
       
       // Always update with the most recent data from localStorage
@@ -47,7 +48,8 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
         const user = {
           id: currentUser.id.toString(),
           username: `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.email || '',
-          email: currentUser.email || ''
+          email: currentUser.email || '',
+          role: currentUser.role?.name === 'admin' ? 'admin' as const : 'user' as const,
         };
         dispatch(loginAction(user));
       }

@@ -4,24 +4,24 @@ import { UserDto } from './userApiService';
 
 // Auth DTOs based on the API definition
 export interface LoginDto {
-  email: string | null;
-  password: string | null;
+  email: string;
+  password: string;
 }
 
 export interface LoginResponseDto {
-  token: string | null;
+  token: string;
   user: UserDto;
 }
 
 // Forgot Password DTOs - Adaptado a la arquitectura superior del backend
 export interface ForgotPasswordDto {
-  email: string | null;
+  email: string;
 }
 
 export interface ResetPasswordDto {
-  token: string | null;
-  newPassword: string | null;
-  confirmPassword: string | null; // Agregado para validación doble
+  token: string;
+  newPassword: string;
+  confirmPassword: string; // Agregado para validación doble
 }
 
 // Auth service functions

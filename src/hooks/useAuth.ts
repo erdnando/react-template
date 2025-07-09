@@ -8,16 +8,16 @@ export const useAuth = () => {
   const authState = useSelector((state: RootState) => state.auth);
 
   const login = async (email: string, password: string) => {
-    console.log('useAuth: Starting login process...', { email });
+    // Starting login process
     dispatch(setLoading(true));
     dispatch(setError(null));
     
     try {
       const credentials = { email, password };
-      console.log('useAuth: Calling login API with credentials:', credentials);
+      // Calling login API with credentials
       
       const response = await authService.login(credentials);
-      console.log('useAuth: Login API response:', response);
+      // Login API response received
       
       if (response.success && response.data) {
         // Save auth data to localStorage
@@ -27,10 +27,11 @@ export const useAuth = () => {
         const user = {
           id: response.data.user.id.toString(),
           username: `${response.data.user.firstName || ''} ${response.data.user.lastName || ''}`.trim() || response.data.user.email || '',
-          email: response.data.user.email || ''
+          email: response.data.user.email || '',
+          role: response.data.user.role?.name === 'admin' ? 'admin' as const : 'user' as const, // Forzar tipo literal
         };
         
-        console.log('useAuth: Login successful, user data:', user);
+        // Login successful, setting user data
         dispatch(loginAction(user));
         return response.data;
       } else {

@@ -9,6 +9,7 @@ export interface AuthResponse {
     id: string;
     username: string;
     email: string;
+    role: 'admin' | 'user'; // <-- Añadido campo de rol
   };
 }
 
@@ -18,6 +19,7 @@ export interface AuthState {
     id: string;
     username: string;
     email: string;
+    role: 'admin' | 'user'; // <-- Añadido campo de rol
   } | null;
   loading: boolean;
   error: string | null;

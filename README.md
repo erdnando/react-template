@@ -108,9 +108,68 @@ When the API is not available, you can use these demo credentials:
 - **Username**: `demo` or `demo@example.com`
 - **Password**: `demo123`
 
+## Documentation
+
+This project includes comprehensive documentation organized into different categories. All documentation files are located in the `docs/` directory:
+
+### 📚 API Documentation
+Backend integration, modules analysis, and API requirements:
+- [Admin Permissions](./docs/api/ADMIN_PERMISSIONS.md) - Admin permissions implementation
+- [API Modules Analysis (Phase 1)](./docs/api/API_MODULES_ANALYSIS_PHASE1.md) - Initial modules analysis
+- [Search Users Endpoint](./docs/api/API_SEARCH_USERS_ENDPOINT.md) - User search API implementation
+- [API Update Summary](./docs/api/API_UPDATE_SUMMARY.md) - Summary of API updates
+- [Backend Email URL Fix](./docs/api/BACKEND_EMAIL_URL_FIX.md) - Email URL configuration fixes
+- [Modules API Requirements](./docs/api/MODULES_API_REQUIREMENTS.md) - API requirements for modules
+- [Permissions API Backend Requirements](./docs/api/PERMISSIONS_API_BACKEND_REQUIREMENTS.md) - Backend requirements for permissions
+- [Permissions API Refactor Complete](./docs/api/PERMISSIONS_API_REFACTOR_COMPLETE.md) - Permissions API refactoring results
+- [Utils Analysis Final Summary](./docs/api/UTILS_ANALYSIS_FINAL_SUMMARY.md) - Final analysis of utility functions
+- [Utils API Impact Analysis](./docs/api/UTILS_API_IMPACT_ANALYSIS.md) - Impact analysis of utility API changes
+
+### 🎯 Features Documentation
+Feature implementations and UI improvements:
+- [Accordion Feature](./docs/features/ACCORDION_FEATURE.md) - Accordion component implementation
+- [Collapsed Groups Feature](./docs/features/COLLAPSED_GROUPS_FEATURE.md) - Collapsible groups functionality
+- [Delete Dialog Fix](./docs/features/DELETE_DIALOG_FIX.md) - Delete confirmation dialog improvements
+- [Permissions Homologation Edit](./docs/features/PERMISOS_HOMOLOGADOS_EDITAR.md) - Permissions editing homologation
+- [Validation Limits Implementation](./docs/features/VALIDATION_LIMITS_IMPLEMENTATION.md) - Input validation limits
+
+### 🔒 Security Documentation
+Authentication, password reset, and security implementations:
+- [Backend Reset Password Request](./docs/security/BACKEND_RESET_PASSWORD_REQUEST.md) - Password reset backend implementation
+- [Backend URL Fix Reset Password](./docs/security/BACKEND_URL_FIX_RESET_PASSWORD.md) - Password reset URL fixes
+- [Debug Reset Password](./docs/security/DEBUG_RESET_PASSWORD.md) - Password reset debugging guide
+- [Login Fix Complete](./docs/security/LOGIN_FIX_COMPLETE.md) - Login functionality fixes
+- [Reset Password Final Summary](./docs/security/RESET_PASSWORD_FINAL_SUMMARY.md) - Complete password reset implementation summary
+- [Reset Password Implementation Complete](./docs/security/RESET_PASSWORD_IMPLEMENTATION_COMPLETE.md) - Password reset feature completion
+- [Reset Password Implementation](./docs/security/RESET_PASSWORD_IMPLEMENTATION.md) - Password reset implementation details
+- [Reset Password UI Homologation Complete](./docs/security/RESET_PASSWORD_UI_HOMOLOGATION_COMPLETE.md) - UI homologation for password reset
+- [Reset Password UI Improvements](./docs/security/RESET_PASSWORD_UI_IMPROVEMENTS.md) - Password reset UI enhancements
+
+### 📊 Project Reports
+Development progress, testing reports, and project summaries:
+- [Compilation Fixed Summary](./docs/reports/COMPILATION_FIXED_SUMMARY.md) - Compilation issues resolution
+- [Dashboard Modernization Complete](./docs/reports/DASHBOARD_MODERNIZATION_COMPLETE.md) - Dashboard modernization results
+- [Final Status Report](./docs/reports/FINAL_STATUS_REPORT.md) - Project final status
+- [Frontend Adaptation Complete](./docs/reports/FRONTEND_ADAPTATION_COMPLETE.md) - Frontend adaptation completion
+- [Modernization Complete](./docs/reports/MODERNIZATION_COMPLETE.md) - Complete modernization summary
+- [Modernization Summary](./docs/reports/MODERNIZATION_SUMMARY.md) - Modernization process summary
+- [Project Successfully Completed](./docs/reports/PROYECTO_COMPLETADO_EXITOSAMENTE.md) - Project completion report
+- [Testing Status Report](./docs/reports/TESTING_STATUS_REPORT.md) - Testing status and results
+
+### ⚙️ Setup & Configuration
+Project setup, definitions, and tutorials:
+- [Backend Permissions Definition](./docs/setup/DEFINICION_PERMISOS_BACKEND.md) - Backend permissions system definition
+- [Tutorial](./docs/setup/tutorial.md) - Project setup and usage tutorial
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a pull request or open an issue for any improvements or suggestions.
+
+When contributing, please:
+1. Follow the existing code style and conventions
+2. Add appropriate tests for new features
+3. Update documentation as needed
+4. Ensure all tests pass before submitting
 
 ## License
 

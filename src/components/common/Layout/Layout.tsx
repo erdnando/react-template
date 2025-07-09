@@ -20,12 +20,12 @@ import {
   Tooltip,
   Breadcrumbs,
   Link as MuiLink,
+  CircularProgress,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
   Home as HomeIcon,
   Category as CatalogIcon,
-  People as PeopleIcon,
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
   Security as SecurityIcon,
@@ -35,6 +35,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../store/store';
 import { useAuth } from '../../../hooks/useAuth';
+import { apiRequest } from '../../../services/apiClient';
+import { useUserPermissions } from '../../../hooks/useUserPermissions';
 
 const drawerWidth = 220;
 const collapsedDrawerWidth = 56;
@@ -43,58 +45,91 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
+// Nuevo tipo para el módulo según el backend
+interface BackendModule {
+  id: number;
+  name: string;
+  code: string; // <-- Add code property
+  description?: string;
+  path: string;
+  icon: string;
+  order?: number;
+}
+
+// Tipo auxiliar para la posible respuesta del backend
+interface BackendModulesResponse {
+  data: BackendModule[];
+}
+
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [moduleAnchorEl, setModuleAnchorEl] = useState<null | HTMLElement>(null);
   
+  // Estado para los módulos dinámicos
+  const [modules, setModules] = useState<BackendModule[] | null>(null);
+  const [modulesLoading, setModulesLoading] = useState(false);
+  const [modulesError, setModulesError] = useState<string | null>(null);
+
   const theme = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuth();
   const user = useSelector((state: RootState) => state.auth.user);
+  const userPermissions = useUserPermissions();
 
   const currentDrawerWidth = isCollapsed ? collapsedDrawerWidth : drawerWidth;
 
-  const menuItems = [
-    {
-      text: 'Home',
-      icon: <HomeIcon />,
-      path: '/',
-    },
-    {
-      text: 'Tasks',
-      icon: <AssignmentIcon />,
-      path: '/tasks',
-    },
-    {
-      text: 'Users',
-      icon: <PeopleIcon />,
-      path: '/users',
-    },
-    {
-      text: 'Roles',
-      icon: <SecurityIcon />,
-      path: '/roles',
-    },
-    {
-      text: 'Catalogs',
-      icon: <CatalogIcon />,
-      path: '/catalogs',
-    },
-    {
-      text: 'Permisos',
-      icon: <AssignmentIcon />,
-      path: '/permissions',
-    },
-    {
-      text: 'Admin Utilities',
-      icon: <SecurityIcon />,
-      path: '/admin/utils',
-      adminOnly: true,
-    },
-  ];
+  // Construir menuItems dinámicamente a partir de modules y permisos
+  const menuItems = React.useMemo(() => {
+    if (!modules) {
+      return [];
+    }
+    const filtered = modules.filter((mod) => {
+      if (!mod.code) {
+        return false;
+      }
+      const perm = userPermissions[mod.code.toLowerCase()];
+      return perm && perm.type !== 'None';
+    });
+    const sorted = filtered.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    const mapped = sorted.map((mod) => {
+      // Icono dinámico robusto (case-insensitive, fallback)
+      let menuIcon: React.ReactNode = <AssignmentIcon />;
+      switch ((mod.icon || '').toLowerCase()) {
+        case 'homeicon': menuIcon = <HomeIcon />; break;
+        case 'assignmenticon': menuIcon = <AssignmentIcon />; break;
+        case 'peopleicon': menuIcon = <SecurityIcon />; break;
+        case 'securityicon': menuIcon = <SecurityIcon />; break;
+        case 'catalogicon': menuIcon = <CatalogIcon />; break;
+        case 'chevronlefticon': menuIcon = <ChevronLeftIcon />; break;
+        case 'chevronrighticon': menuIcon = <ChevronRightIcon />; break;
+        default: break;
+      }
+      // Force Admin Utilities path to '/admin/utils'
+      let path = mod.path;
+      if (mod.code && mod.code.toLowerCase() === 'admin_utils') {
+        path = '/admin/utils';
+      }
+      return {
+        text: mod.name,
+        icon: menuIcon,
+        path,
+      };
+    });
+    return mapped;
+  }, [modules, userPermissions]);
+
+  // Agrupación de menú en 3 secciones (igual que antes, pero usando menuItems)
+  const menuGroups = React.useMemo(() => {
+    if (!menuItems.length) return [[], [], []];
+    return [
+      menuItems.filter(item => item.text === 'Home'),
+      menuItems.filter(item => ['Tasks', 'Catalogs'].includes(item.text)),
+      menuItems.filter(item => ['Users', 'Roles', 'Permisos', 'Admin Utilities'].includes(item.text)),
+    ];
+  }, [menuItems]);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -137,78 +172,114 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const drawer = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* Navigation items */}
-      <List sx={{ flexGrow: 1, pt: 2.5, px: 0.5 }}>
-        {menuItems
-          .filter(item => !item.adminOnly || user?.email === 'admin@sistema.com')
-          .map((item) => (
-          <ListItem key={item.text} disablePadding sx={{ display: 'block' }}>
-            <ListItemButton
-              component={Link}
-              to={item.path}
-              sx={{
-                minHeight: 36,
-                justifyContent: isCollapsed ? 'center' : 'initial',
-                px: isCollapsed ? 0.75 : 1.25,
-                mx: 0.5,
-                borderRadius: 1,
-                mb: 0.2,
-                '&:hover': {
-                  bgcolor: 'primary.light',
-                  color: 'primary.contrastText',
-                },
-                ...(location.pathname === item.path && {
-                  bgcolor: 'primary.main',
-                  color: 'primary.contrastText',
-                  '&:hover': {
-                    bgcolor: 'primary.dark',
-                  },
-                }),
-              }}
-            >
-              <ListItemIcon
-                sx={{
-                  minWidth: 0,
-                  mr: isCollapsed ? 'auto' : 2,
-                  justifyContent: 'center',
-                  color: location.pathname === item.path ? 'primary.contrastText' : 'primary.main',
-                  '& .MuiSvgIcon-root': {
-                    fontSize: '1.1rem',
-                  },
-                }}
-              >
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText
-                primary={item.text}
-                sx={{
-                  opacity: isCollapsed ? 0 : 1,
-                  '& .MuiListItemText-primary': {
-                    fontWeight: location.pathname === item.path ? 600 : 500,
-                    fontSize: '0.8125rem',
-                  },
-                }}
-              />
-            </ListItemButton>
-          </ListItem>
+      {/* Navigation items agrupados */}
+      <List sx={{ flexGrow: 1, pt: 4.5, px: 0.5 }}>
+        {menuGroups.map((group, idx) => (
+          <React.Fragment key={idx}>
+            {group
+              .filter(item => item) // adminOnly ya no existe
+              .map((item) => (
+                <ListItem key={item.text} disablePadding sx={{ display: 'block' }}>
+                  <ListItemButton
+                    component={Link}
+                    to={item.path}
+                    sx={{
+                      minHeight: 36,
+                      justifyContent: isCollapsed ? 'center' : 'initial',
+                      px: isCollapsed ? 0.75 : 1.25,
+                      mx: 0.5,
+                      borderRadius: 1,
+                      mb: 0.2,
+                      '&:hover': {
+                        bgcolor: 'primary.light',
+                        color: 'primary.contrastText',
+                      },
+                      ...(location.pathname === item.path && {
+                        bgcolor: 'primary.main',
+                        color: 'primary.contrastText',
+                        '&:hover': {
+                          bgcolor: 'primary.dark',
+                        },
+                      }),
+                    }}
+                  >
+                    <ListItemIcon
+                      sx={{
+                        minWidth: 0,
+                        mr: isCollapsed ? 'auto' : 2,
+                        justifyContent: 'center',
+                        color: location.pathname === item.path ? 'primary.contrastText' : 'primary.main',
+                        '& .MuiSvgIcon-root': {
+                          fontSize: '1.3rem',
+                        },
+                      }}
+                    >
+                      {item.icon}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={item.text}
+                      sx={{
+                        opacity: isCollapsed ? 0 : 1,
+                        '& .MuiListItemText-primary': {
+                          fontWeight: location.pathname === item.path ? 600 : 500,
+                          fontSize: '0.95rem',
+                        },
+                      }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            {/* Divider entre grupos, excepto el último */}
+            {idx < menuGroups.length - 1 && <Divider sx={{ my: 1.5 }} />}
+          </React.Fragment>
         ))}
       </List>
 
-      {/* Collapse button */}
-      <Box sx={{ p: 0.5, display: { xs: 'none', md: 'block' } }}>
+      {/* Collapse button - Siempre visible y más destacado */}
+      <Box 
+        sx={{ 
+          position: 'absolute',
+          top: '50%',
+          right: -12,
+          zIndex: 9999,
+          transform: 'translateY(-50%)',
+          display: { xs: 'none', md: 'block' },
+        }}
+      >
         <IconButton
           onClick={handleDrawerCollapse}
           size="small"
+          aria-label={isCollapsed ? "Expand menu" : "Collapse menu"}
           sx={{
-            width: '100%',
-            borderRadius: 0.75,
-            py: 0.4,
+            width: 32,
+            height: 32,
+            bgcolor: 'primary.main',
+            color: 'white',
+            border: '0px solid',
+            borderColor: 'background.paper',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            borderRadius: '50%',
+            filter: 'drop-shadow(0px 0px 3px rgba(0, 120, 255, 0.4))', /* Efecto de resplandor azul */
+            transition: theme.transitions.create(['background-color', 'transform', 'box-shadow', 'filter'], {
+              duration: theme.transitions.duration.short,
+            }),
             '&:hover': {
-              bgcolor: 'action.hover',
+              bgcolor: 'primary.dark',
+              color: 'white',
+              transform: 'scale(1.15)',
+              boxShadow: '0 6px 16px rgba(0,0,0,0.4)',
+              filter: 'drop-shadow(0px 0px 8px rgba(0, 120, 255, 0.6))',
+            },
+            '&:active': {
+              transform: 'scale(0.95)',
             },
             '& .MuiSvgIcon-root': {
-              fontSize: '0.9rem',
+              fontSize: '1.1rem',
+              fontWeight: 'bold',
             },
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
           }}
         >
           {isCollapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
@@ -216,6 +287,45 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </Box>
     </Box>
   );
+
+  React.useEffect(() => {
+    setModulesLoading(true);
+    apiRequest.get<BackendModule[] | BackendModulesResponse>('/Modules')
+      .then((resp) => {
+        let modulesArr: BackendModule[] | undefined;
+        if (Array.isArray(resp)) {
+          modulesArr = resp.filter((m: BackendModule) => m && m.path);
+        } else if (resp && Array.isArray((resp as BackendModulesResponse).data)) {
+          modulesArr = (resp as BackendModulesResponse).data.filter((m: BackendModule) => m && m.path);
+        }
+        if (modulesArr && modulesArr.length > 0) {
+          setModules(modulesArr);
+          setModulesError(null);
+        } else {
+          setModulesError('Respuesta inesperada del backend para los módulos.');
+        }
+      })
+      .catch((err) => {
+        setModulesError(err?.message || 'Error al cargar los módulos del menú.');
+      })
+      .finally(() => setModulesLoading(false));
+  }, []);
+
+  // Si los módulos están cargando o hay error, mostrar feedback en el drawer
+  if (modulesLoading) {
+    return (
+      <Box sx={{ width: currentDrawerWidth, display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
+        <CircularProgress size={32} />
+      </Box>
+    );
+  }
+  if (modulesError) {
+    return (
+      <Box sx={{ width: currentDrawerWidth, display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: 'error.main', p: 2 }}>
+        <Typography variant="body2">{modulesError}</Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -252,7 +362,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               display: { md: 'none' },
               mr: 1,
               '& .MuiSvgIcon-root': {
-                fontSize: '1.1rem',
+                fontSize: '1.3rem',
               },
             }}
           >
@@ -262,8 +372,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           {/* Logo */}
           <Box
             sx={{
-              width: 28,
-              height: 28,
+              width: 40,
+              height: 40,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -289,7 +399,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             sx={{ 
               fontWeight: 600,
               color: 'text.primary',
-              fontSize: '0.9rem',
+              fontSize: '1.1rem',
               letterSpacing: '0.15px',
               display: { xs: 'none', md: 'block' },
               flexShrink: 0,
@@ -322,7 +432,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   color: 'text.secondary', 
                   textDecoration: 'none', 
                   fontWeight: 500,
-                  fontSize: '0.8125rem',
+                  fontSize: '0.9rem',
                   '&:hover': {
                     color: 'primary.main'
                   }
@@ -354,7 +464,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                           }
                         }}
                       >
-                        <Box sx={{ mr: 0.75, color: 'primary.main', fontSize: '1rem' }}>
+                        <Box sx={{ mr: 0.75, color: 'primary.main', fontSize: '1.2rem' }}>
                           {getCurrentModule().icon}
                         </Box>
                         <Typography 
@@ -363,7 +473,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             fontWeight: 600,
                             color: 'text.primary',
                             mr: 0.5,
-                            fontSize: '0.8125rem',
+                            fontSize: '0.95rem',
                           }}
                         >
                           {getCurrentModule().text}
@@ -408,10 +518,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                               }
                             }}
                           >
-                            <Box sx={{ mr: 1.5, color: location.pathname === item.path ? 'inherit' : 'primary.main', fontSize: '1rem' }}>
+                            <Box sx={{ mr: 1.5, color: location.pathname === item.path ? 'inherit' : 'primary.main', fontSize: '1.2rem' }}>
                               {item.icon}
                             </Box>
-                            <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.8125rem' }}>
+                            <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.9rem' }}>
                               {item.text}
                             </Typography>
                           </MenuItem>
@@ -432,7 +542,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       textDecoration: 'none', 
                       textTransform: 'capitalize',
                       fontWeight: 500,
-                      fontSize: '0.8125rem',
+                      fontSize: '0.9rem',
                       '&:hover': {
                         color: 'primary.main'
                       }
@@ -495,24 +605,24 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   {user?.username?.charAt(0).toUpperCase() || 'U'}
                 </Avatar>
                 <Box>
-                  <Typography sx={{ fontWeight: 600, fontSize: 14, lineHeight: 1.2 }}>
+                  <Typography sx={{ fontWeight: 600, fontSize: 15, lineHeight: 1.2 }}>
                     {user?.username || 'Usuario'}
                   </Typography>
-                  <Typography sx={{ fontSize: 11, color: 'text.secondary', lineHeight: 1.2 }}>
+                  <Typography sx={{ fontSize: 12, color: 'text.secondary', lineHeight: 1.2 }}>
                     {user?.email || 'correo@ejemplo.com'}
                   </Typography>
                 </Box>
               </Box>
               <Divider sx={{ my: 0.5 }} />
               <MenuItem onClick={handleProfileClose} sx={{ py: 0.75, px: 1.5 }}>
-                <Typography sx={{ fontSize: 13 }}>Profile</Typography>
+                <Typography sx={{ fontSize: 14 }}>Profile</Typography>
               </MenuItem>
               <MenuItem onClick={handleProfileClose} sx={{ py: 0.75, px: 1.5 }}>
-                <Typography sx={{ fontSize: 13 }}>Settings</Typography>
+                <Typography sx={{ fontSize: 14 }}>Settings</Typography>
               </MenuItem>
               <Divider sx={{ my: 0.5 }} />
               <MenuItem onClick={handleLogout} sx={{ color: 'error.main', py: 0.75, px: 1.5 }}>
-                <Typography sx={{ fontSize: 13, fontWeight: 600 }}>
+                <Typography sx={{ fontSize: 14, fontWeight: 600 }}>
                   Sign out
                 </Typography>
               </MenuItem>

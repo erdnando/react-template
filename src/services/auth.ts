@@ -17,22 +17,49 @@ axios.interceptors.request.use(
   }
 );
 
+// Tipo para el usuario crudo recibido del backend
+interface RawUser {
+  id?: string | number;
+  userId?: string | number;
+  username?: string;
+  name?: string;
+  userName?: string;
+  displayName?: string;
+  email?: string;
+  emailAddress?: string;
+  mail?: string;
+  role?: { name?: string } | string;
+}
+
 // Función para normalizar los datos del usuario desde el backend
-const normalizeUser = (rawUser: Record<string, unknown>): { id: string; username: string; email: string } => {
+const normalizeUser = (rawUser: RawUser): { id: string; username: string; email: string; role: 'admin' | 'user' } => {
   if (!rawUser) {
     return {
       id: '1',
       username: 'Usuario',
-      email: 'correo@ejemplo.com'
+      email: 'correo@ejemplo.com',
+      role: 'user',
     };
   }
   
   // Extraer valores reales, evitar usar fallbacks si hay datos válidos
   const id = String(rawUser.id || rawUser.userId || '1');
-  const username = String(rawUser.username || rawUser.name || rawUser.userName || rawUser.displayName || 'Usuario');
-  const email = String(rawUser.email || rawUser.emailAddress || rawUser.mail || 'correo@ejemplo.com');
+  const username = String(
+    rawUser.username || rawUser.name || rawUser.userName || rawUser.displayName || 'Usuario'
+  );
+  const email = String(
+    rawUser.email || rawUser.emailAddress || rawUser.mail || 'correo@ejemplo.com'
+  );
   
-  return { id, username, email };
+  // Mapear el rol del backend a 'admin' | 'user'
+  let role: 'admin' | 'user' = 'user';
+  if (typeof rawUser.role === 'object' && rawUser.role && typeof rawUser.role.name === 'string') {
+    role = rawUser.role.name.toLowerCase() === 'admin' ? 'admin' : 'user';
+  } else if (typeof rawUser.role === 'string') {
+    role = rawUser.role.toLowerCase() === 'admin' ? 'admin' : 'user';
+  }
+  
+  return { id, username, email, role };
 };
 
 export const login = async (credentials: AuthCredentials): Promise<AuthResponse> => {
@@ -41,7 +68,7 @@ export const login = async (credentials: AuthCredentials): Promise<AuthResponse>
   // El backend devuelve { success, message, data: { token, user } }
   const { token, user: rawUser } = response.data.data;
   
-  // Normalizar el usuario para asegurar que siempre tenga username y email
+  // Normalizar el usuario para asegurar que siempre tenga username, email y role
   const user = normalizeUser(rawUser);
   
   localStorage.setItem('token', token);
@@ -56,7 +83,7 @@ export const register = async (credentials: AuthCredentials & { email: string })
   // El backend devuelve { success, message, data: { token, user } }
   const { token, user: rawUser } = response.data.data;
   
-  // Normalizar el usuario para asegurar que siempre tenga username y email
+  // Normalizar el usuario para asegurar que siempre tenga username, email y role
   const user = normalizeUser(rawUser);
   
   localStorage.setItem('token', token);
@@ -79,7 +106,6 @@ export const getCurrentUser = () => {
   const token = localStorage.getItem('token');
   const user = localStorage.getItem('user');
   
-  // localStorage.getItem returns null when the key doesn't exist, not undefined
   if (token && user && user !== 'null') {
     try {
       const rawUser = JSON.parse(user);

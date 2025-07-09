@@ -9,9 +9,12 @@ import {
   deleteUserAsync
 } from '../../store/slices/userSlice';
 import { UserStatus } from '../../services/userApiService';
-import { usePermissionsApi } from '../../hooks';
+import roleApiService, { RoleDto } from '../../services/roleApiService';
+import { applyRolePermissionRules } from '../../services/businessRulesService';
+import { SelectChangeEvent } from '@mui/material/Select';
 import { VALIDATION_LIMITS } from '../../utils/validationConstants';
 import { isValidEmail } from '../../utils/helpers';
+import { ReadOnlyBanner, ModuleHeader } from '../../components/ui';
 import {
   Box,
   Paper,
@@ -39,7 +42,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  SelectChangeEvent,
   Tooltip,
   Snackbar,
   Alert
@@ -51,18 +53,25 @@ import {
   Add as AddIcon,
 } from '@mui/icons-material';
 
+// Use the imported RoleDto for our local Role type to ensure compatibility
+type Role = RoleDto;
+
 interface UserManagementProps {
   isModal?: boolean;
   onClose?: () => void;
   showStats?: boolean;
   title?: string;
+  canEdit?: boolean;
+  refreshPermissions?: () => Promise<void>;
 }
 
 const UserManagement: React.FC<UserManagementProps> = ({ 
   isModal = false, 
   onClose, 
   showStats = true,
-  title = "User Management"
+  title = "User Management",
+  canEdit = true,
+  refreshPermissions
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [openDialog, setOpenDialog] = useState(false);
@@ -84,15 +93,40 @@ const UserManagement: React.FC<UserManagementProps> = ({
     password: '',
     roleId: '',
   });
+  const [allRoles, setAllRoles] = useState<Role[]>([]);
   const dispatch: AppDispatch = useDispatch();
   const { users, loading, error } = useSelector((state: RootState) => state.users);
   
-  // Get roles from the permissions API
-  const { roles } = usePermissionsApi();
+  useEffect(() => {
+    roleApiService.getRoles().then((response) => {
+      // Handle different possible API response structures
+      if (Array.isArray(response.data)) {
+        // If response.data is already an array
+        setAllRoles(response.data);
+      } else if (response.data && typeof response.data === 'object') {
+        // Check if response.data is PagedResult<RoleDto> structure
+        if (response.data.data && Array.isArray(response.data.data)) {
+          // This matches the PagedResult<RoleDto> structure where data property contains the array
+          setAllRoles(response.data.data);
+        } else {
+          // If we can't find the array in the expected locations, log and use empty array
+          console.error('Could not extract roles from API response:', response);
+          setAllRoles([]);
+        }
+      } else {
+        // Fallback to empty array if no valid data
+        console.error('Could not extract roles from API response:', response);
+        setAllRoles([]);
+      }
+    }).catch(error => {
+      console.error('Error fetching roles:', error);
+      setAllRoles([]);
+    });
+  }, []);
 
-  // Helper function to check if a user is admin
-  const isAdminUser = (user: User): boolean => {
-    return user.role.toLowerCase() === 'administrador' || user.role.toLowerCase() === 'admin';
+  // Helper function to check if a user is the main system admin (admin@sistema.com)
+  const isMainSystemAdmin = (user: User): boolean => {
+    return user.email.toLowerCase() === 'admin@sistema.com';
   };
 
   // Validation functions
@@ -167,14 +201,9 @@ const UserManagement: React.FC<UserManagementProps> = ({
 
   const handleEdit = async (user: User) => {
     setSelectedUser(user);
-    const isAdmin = isAdminUser(user);
+    const isSystemAdmin = isMainSystemAdmin(user);
     
-    console.log('🔍 Loading user for edit:', {
-      user: user,
-      status: user.status,
-      isActive: user.isActive,
-      isAdmin: isAdmin
-    });
+    // Loading user for edit - debug logging removed for production
     
     try {
       // Get the full user details from the API to ensure we have firstName and lastName
@@ -188,8 +217,8 @@ const UserManagement: React.FC<UserManagementProps> = ({
         email: userDto.email || user.email,
         password: '',
         roleId: userDto.roleId || user.roleId,
-        // Force admin users to have active status
-        status: isAdmin ? 'active' : user.status,
+        // Force main system admin to have active status
+        status: isSystemAdmin ? 'active' : user.status,
       });
     } catch (error) {
       console.error('Error fetching user details:', error);
@@ -201,8 +230,8 @@ const UserManagement: React.FC<UserManagementProps> = ({
         email: user.email,
         password: '',
         roleId: user.roleId,
-        // Force admin users to have active status
-        status: isAdmin ? 'active' : user.status,
+        // Force main system admin to have active status
+        status: isSystemAdmin ? 'active' : user.status,
       });
     }
     
@@ -211,9 +240,9 @@ const UserManagement: React.FC<UserManagementProps> = ({
   };
 
   const handleDelete = async (user: User) => {
-    // No permitir eliminar usuarios administradores
-    if (isAdminUser(user)) {
-      setSnackbar('No se puede eliminar un usuario con rol de Administrador.');
+    // No permitir eliminar al administrador principal del sistema
+    if (isMainSystemAdmin(user)) {
+      setSnackbar('No se puede eliminar al administrador principal del sistema.');
       return;
     }
     await dispatch(deleteUserAsync(user.id));
@@ -221,10 +250,28 @@ const UserManagement: React.FC<UserManagementProps> = ({
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
-    setSelectedUser(null);
-    setForm({ firstName: '', lastName: '', email: '', password: '', roleId: 0, status: 'active' });
-    setFormErrors({ firstName: '', lastName: '', email: '', password: '', roleId: '' });
+    setForm({
+      firstName: '',
+      lastName: '',
+      email: '',
+      password: '',
+      roleId: 0,
+      status: 'active',
+    });
+    setFormErrors({
+      firstName: '',
+      lastName: '',
+      email: '',
+      password: '',
+      roleId: '',
+    });
     setIsEdit(false);
+    setSelectedUser(null);
+  };
+
+  // Display toast message
+  const handleCloseSnackbar = () => {
+    setSnackbar(null);
   };
 
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
@@ -309,17 +356,29 @@ const UserManagement: React.FC<UserManagementProps> = ({
     }
 
     if (isEdit && selectedUser) {
-      // Prevent deactivating admin users
-      if (isAdminUser(selectedUser) && form.status === 'inactive') {
-        setSnackbar('No se puede desactivar un usuario con rol de Administrador.');
+      // Prevent deactivating the main system admin
+      if (isMainSystemAdmin(selectedUser) && form.status === 'inactive') {
+        setSnackbar('No se puede desactivar al administrador principal del sistema.');
         return;
       }
       
-      console.log('🔄 Updating user:', {
-        id: selectedUser.id,
-        formStatus: form.status,
-        convertedStatus: form.status === 'active' ? UserStatus.Active : UserStatus.Inactive
-      });
+      // For main system admin, always maintain the admin role regardless of what was selected
+      const finalRoleId = isMainSystemAdmin(selectedUser) 
+        ? selectedUser.roleId // Keep original role for main system admin
+        : (form.roleId > 0 ? form.roleId : null);
+      
+      // Check if the role has changed
+      const roleChanged = selectedUser.roleId !== form.roleId && form.roleId > 0;
+      
+      // Check if user is becoming an admin or being demoted from admin
+      // Find the role from allRoles to check if it's an admin role
+      const newRole = allRoles.find(role => role.id === form.roleId);
+      const isBecomingAdmin = newRole?.name?.toLowerCase().includes('admin');
+      
+      // Flag to track permission rule changes
+      let permissionRulesApplied = false;
+      
+      // Updating user - debug logging removed for production
       
       await dispatch(updateUserAsync({ 
         id: selectedUser.id, 
@@ -327,7 +386,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
           firstName: form.firstName,
           lastName: form.lastName,
           email: form.email,
-          roleId: form.roleId > 0 ? form.roleId : null, // Use the form roleId
+          roleId: finalRoleId, // Use original role for admins, form roleId for others
           status: form.status === 'active' ? UserStatus.Active : UserStatus.Inactive,
           avatar: null
         } 
@@ -335,6 +394,47 @@ const UserManagement: React.FC<UserManagementProps> = ({
       
       // Refresh users list after update
       await dispatch(fetchUsers());
+      
+      // If the role was changed, apply business rules for permission management
+      if (roleChanged && !isMainSystemAdmin(selectedUser)) {
+        try {
+          // Apply business rules for permission changes based on role
+          const success = await applyRolePermissionRules(
+            selectedUser.id, 
+            finalRoleId as number, 
+            isBecomingAdmin || false
+          );
+          
+          permissionRulesApplied = success;
+          
+          if (success) {
+            // Permission rules applied successfully - debug logging removed for production
+          } else {
+            console.error(`Failed to apply permission rules for user ${selectedUser.id}`);
+          }
+        } catch (error) {
+          console.error('Error applying permission business rules:', error);
+        }
+      }
+      
+      // If the role was changed, refresh permissions
+      if (roleChanged && refreshPermissions) {
+        try {
+          await refreshPermissions();
+          if (permissionRulesApplied) {
+            if (isBecomingAdmin) {
+              setSnackbar('User role changed to Administrator. Full permissions have been granted to ALL modules, including administrative functions. User must log out and log back in for changes to take effect.');
+            } else {
+              setSnackbar('User role changed from Administrator. Administrative permissions have been revoked. User must log out and log back in for changes to take effect.');
+            }
+          } else {
+            setSnackbar('User updated and permissions refreshed. User must log out and log back in for changes to take effect.');
+          }
+        } catch (error) {
+          console.error('Error refreshing permissions:', error);
+          setSnackbar('User updated but there was an error refreshing permissions. User must log out and log back in for changes to take effect.');
+        }
+      }
     } else {
       await dispatch(createUserAsync({ 
         firstName: form.firstName,
@@ -378,6 +478,17 @@ const UserManagement: React.FC<UserManagementProps> = ({
     return status === 'active' ? 'success' : 'error';
   };
 
+  // Ensure roles are loaded before opening the dialog and always show all roles in the selector
+  useEffect(() => {
+    if (isEdit && openDialog && allRoles.length > 0) {
+      // Si el rol actual del usuario no está en la lista de roles, lo agregamos temporalmente
+      if (form.roleId && !allRoles.some(r => r.id === Number(form.roleId))) {
+        // No modificar el form.roleId, solo mostrar el rol actual como opción adicional
+        // Esto se maneja en el render del selector
+      }
+    }
+  }, [isEdit, openDialog, allRoles, form.roleId]);
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '40vh' }}>
@@ -396,15 +507,14 @@ const UserManagement: React.FC<UserManagementProps> = ({
 
   const content = (
     <>
-      {/* Header */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h5" component="h1" gutterBottom>
-          {title}
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Manage and monitor all users in your application
-        </Typography>
-      </Box>
+      {/* Header con ModuleHeader */}
+      <ModuleHeader
+        title={title}
+        subtitle="Manage and monitor all users in your application"
+      />
+      
+      {/* Read Only Banner */}
+      {!canEdit && <ReadOnlyBanner />}
 
       {/* Stats Cards */}
       {showStats && (
@@ -488,15 +598,17 @@ const UserManagement: React.FC<UserManagementProps> = ({
               width: { xs: '100%', sm: 280 }
             }}
           />
-          <Button
-            variant="contained"
-            startIcon={<AddIcon sx={{ fontSize: '1.1rem' }} />}
-            onClick={() => setOpenDialog(true)}
-            size="small"
-            sx={{ display: { xs: 'none', sm: 'flex' } }}
-          >
-            Add User
-          </Button>
+          {canEdit && (
+            <Button
+              variant="contained"
+              startIcon={<AddIcon sx={{ fontSize: '1.1rem' }} />}
+              onClick={() => setOpenDialog(true)}
+              size="small"
+              sx={{ display: { xs: 'none', sm: 'flex' } }}
+            >
+              Add User
+            </Button>
+          )}
         </Box>
       </Paper>
 
@@ -505,13 +617,13 @@ const UserManagement: React.FC<UserManagementProps> = ({
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
-              <TableRow>
-                <TableCell>User</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Role</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Join Date</TableCell>
-                <TableCell align="right">Actions</TableCell>
+              <TableRow sx={{ bgcolor: 'grey.50' }}>
+                <TableCell sx={{ fontWeight: 'bold', color: 'text.primary' }}>User</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', color: 'text.primary' }}>Email</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', color: 'text.primary' }}>Role</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', color: 'text.primary' }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', color: 'text.primary' }}>Join Date</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 'bold', color: 'text.primary' }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -546,31 +658,35 @@ const UserManagement: React.FC<UserManagementProps> = ({
                     {new Date(user.joinDate).toLocaleDateString()}
                   </TableCell>
                   <TableCell align="right">
-                    <IconButton 
-                      onClick={() => handleEdit(user)}
-                      color="primary"
-                      size="small"
-                    >
-                      <EditIcon sx={{ fontSize: '1.1rem' }} />
-                    </IconButton>
-                    <Tooltip 
-                      title={
-                        isAdminUser(user) 
-                          ? 'Cannot delete Administrator user' 
-                          : 'Delete user'
-                      }
-                    >
-                      <span>
+                    {canEdit && (
+                      <>
                         <IconButton 
-                          onClick={() => handleDelete(user)}
-                          color="error"
+                          onClick={() => handleEdit(user)}
+                          color="primary"
                           size="small"
-                          disabled={isAdminUser(user)}
                         >
-                          <DeleteIcon sx={{ fontSize: '1.1rem' }} />
+                          <EditIcon sx={{ fontSize: '1.1rem' }} />
                         </IconButton>
-                      </span>
-                    </Tooltip>
+                        <Tooltip 
+                          title={
+                            isMainSystemAdmin(user) 
+                              ? 'Cannot delete main system administrator' 
+                              : 'Delete user'
+                          }
+                        >
+                          <span>
+                            <IconButton 
+                              onClick={() => handleDelete(user)}
+                              color="error"
+                              size="small"
+                              disabled={isMainSystemAdmin(user)}
+                            >
+                              <DeleteIcon sx={{ fontSize: '1.1rem' }} />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                      </>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -614,31 +730,35 @@ const UserManagement: React.FC<UserManagementProps> = ({
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 0.5 }}>
-                  <IconButton 
-                    onClick={() => handleEdit(user)}
-                    color="primary"
-                    size="small"
-                  >
-                    <EditIcon sx={{ fontSize: '1rem' }} />
-                  </IconButton>
-                  <Tooltip 
-                    title={
-                      isAdminUser(user) 
-                        ? 'Cannot delete Administrator user' 
-                        : 'Delete user'
-                    }
-                  >
-                    <span>
+                  {canEdit && (
+                    <>
                       <IconButton 
-                        onClick={() => handleDelete(user)}
-                        color="error"
+                        onClick={() => handleEdit(user)}
+                        color="primary"
                         size="small"
-                        disabled={isAdminUser(user)}
                       >
-                        <DeleteIcon sx={{ fontSize: '1rem' }} />
+                        <EditIcon sx={{ fontSize: '1rem' }} />
                       </IconButton>
-                    </span>
-                  </Tooltip>
+                      <Tooltip 
+                        title={
+                          isMainSystemAdmin(user) 
+                            ? 'Cannot delete main system administrator' 
+                            : 'Delete user'
+                        }
+                      >
+                        <span>
+                          <IconButton 
+                            onClick={() => handleDelete(user)}
+                            color="error"
+                            size="small"
+                            disabled={isMainSystemAdmin(user)}
+                          >
+                            <DeleteIcon sx={{ fontSize: '1rem' }} />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    </>
+                  )}
                 </Box>
               </Box>
             </CardContent>
@@ -647,7 +767,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
       </Box>
 
       {/* FAB for mobile */}
-      {!isModal && (
+      {!isModal && canEdit && (
         <Fab
           color="primary"
           aria-label="add"
@@ -757,19 +877,53 @@ const UserManagement: React.FC<UserManagementProps> = ({
               <InputLabel>Role *</InputLabel>
               <Select
                 name="roleId"
-                value={form.roleId}
+                value={Number(form.roleId) || ''}
                 onChange={handleRoleChange}
                 label="Role *"
+                disabled={selectedUser ? isMainSystemAdmin(selectedUser) : false}
               >
-                {roles.map((role) => (
-                  <MenuItem key={role.id} value={role.id}>
-                    {role.name}
-                  </MenuItem>
-                ))}
+                {(() => {
+                  const currentRoleId = Number(form.roleId);
+                  const uniqueRoles = [...allRoles];
+                  // Si el rol actual no está en la lista de roles, lo agregamos
+                  if (
+                    currentRoleId !== 0 &&
+                    !allRoles.some(r => r.id === currentRoleId)
+                  ) {
+                    uniqueRoles.push({ 
+                      id: currentRoleId, 
+                      name: selectedUser?.role || 'Current Role', 
+                      isSystemRole: false,
+                      description: null,
+                      createdAt: new Date().toISOString(),
+                      updatedAt: null
+                    });
+                  }
+                  // Filtrar duplicados por id
+                  const seen = new Set();
+                  const filteredRoles = uniqueRoles.filter(r => {
+                    if (seen.has(r.id)) return false;
+                    seen.add(r.id);
+                    return true;
+                  });
+                  if (filteredRoles.length === 0) {
+                    return <MenuItem value="" disabled>No roles available</MenuItem>;
+                  }
+                  return filteredRoles.map((role) => (
+                    <MenuItem key={role.id} value={role.id}>
+                      {role.name || `Role #${role.id}`}
+                    </MenuItem>
+                  ));
+                })()}
               </Select>
               {formErrors.roleId && (
                 <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
                   {formErrors.roleId}
+                </Typography>
+              )}
+              {selectedUser && isMainSystemAdmin(selectedUser) && (
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block', ml: 1.75 }}>
+                  The main system administrator role cannot be changed
                 </Typography>
               )}
             </FormControl>
@@ -780,15 +934,15 @@ const UserManagement: React.FC<UserManagementProps> = ({
                 value={form.status}
                 onChange={handleFormSelectChange}
                 label="Status"
-                disabled={selectedUser ? isAdminUser(selectedUser) : false}
+                disabled={selectedUser ? isMainSystemAdmin(selectedUser) : false}
               >
                 <MenuItem value="active">Active</MenuItem>
                 <MenuItem value="inactive">Inactive</MenuItem>
               </Select>
             </FormControl>
-            {selectedUser && isAdminUser(selectedUser) && (
+            {selectedUser && isMainSystemAdmin(selectedUser) && (
               <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                Administrator users cannot be deactivated
+                The main system administrator cannot be deactivated
               </Typography>
             )}
           </Box>
@@ -820,13 +974,17 @@ const UserManagement: React.FC<UserManagementProps> = ({
       </Dialog>
 
       {/* Snackbar for notifications */}
-      <Snackbar
+      <Snackbar 
         open={!!snackbar}
         autoHideDuration={6000}
-        onClose={() => setSnackbar(null)}
+        onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert onClose={() => setSnackbar(null)} severity="warning" sx={{ width: '100%' }}>
+        <Alert 
+          onClose={handleCloseSnackbar} 
+          severity="info" 
+          sx={{ width: '100%' }}
+        >
           {snackbar}
         </Alert>
       </Snackbar>

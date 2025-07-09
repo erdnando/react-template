@@ -20,24 +20,33 @@ const Login: React.FC = () => {
   const { login, loading, error } = useAuth();
   const navigate = useNavigate();
 
+  const logErrorToFile = async (message: string) => {
+    try {
+      await fetch('/login-error.log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: `[${new Date().toISOString()}] ${message}\n`,
+      });
+    } catch (err) {
+      // Si falla el log, solo mostrar en consola
+      console.error('Failed to write to login-error.log:', err);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLocalError(null);
     
-    console.log('Login: Form submitted with data:', { email, password: '***' });
-    
     try {
-      console.log('Login: About to call login function...');
-      const result = await login(email, password);
-      console.log('Login: Login function completed successfully:', result);
+      await login(email, password);
       
       // Redireccionar al home después de login exitoso
       navigate('/');
     } catch (error: unknown) {
       console.error('Login: Error occurred during login:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
-      console.log('Login: Setting error message:', errorMessage);
       setLocalError(errorMessage);
+      logErrorToFile(errorMessage);
     }
   };
 

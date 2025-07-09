@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Box,
   Typography,
@@ -8,25 +8,24 @@ import {
   Paper,
   Avatar,
   Chip,
-  Collapse,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
   TrendingUp as TrendingUpIcon,
   People as PeopleIcon,
   Inventory as InventoryIcon,
-  Api as ApiIcon,
 } from '@mui/icons-material';
+import { ModuleHeader } from '../../components/ui';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { RootState } from '../../store/store';
-import { ApiTest } from '../../components/ApiTest';
+
 import UserInfo from '../../components/UserInfo';
 
 const Home: React.FC = () => {
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
   const navigate = useNavigate();
-  const [showApiTester, setShowApiTester] = useState(false);
+
 
   const dashboardCards = [
     {
@@ -65,32 +64,30 @@ const Home: React.FC = () => {
 
   return (
     <Box sx={{ p: { xs: 2, sm: 3 } }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Welcome{isAuthenticated && user ? `, ${user.username}` : ''}!
-        </Typography>
-        <Typography variant="body1" color="text.secondary" gutterBottom>
-          Modern React Template Dashboard
-        </Typography>
-        {!isAuthenticated && (
-          <Box sx={{ mt: 2 }}>
-            <Chip 
-              label="Please login to access all features" 
-              color="info" 
-              variant="outlined"
-              sx={{ mr: 2 }}
-            />
-            <Button 
-              variant="contained" 
-              size="small"
-              onClick={() => navigate('/login')}
-              sx={{ ml: 1 }}
-            >
-              Login Now
-            </Button>
-          </Box>
-        )}
-      </Box>
+      <ModuleHeader 
+        title={`Welcome${isAuthenticated && user ? `, ${user.username}` : ''}!`}
+        subtitle="Modern React Template Dashboard"
+        action={
+          !isAuthenticated && (
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Chip 
+                label="Please login to access all features" 
+                color="info" 
+                variant="outlined"
+                sx={{ mr: 2 }}
+              />
+              <Button 
+                variant="contained" 
+                size="small"
+                onClick={() => navigate('/login')}
+              >
+                Login Now
+              </Button>
+            </Box>
+          )
+        }
+      />
+      
 
       {isAuthenticated ? (
         <>
@@ -232,30 +229,7 @@ const Home: React.FC = () => {
         </Paper>
       )}
 
-      {/* API Tester Section */}
-      <Box sx={{ mt: 4 }}>
-        <Paper sx={{ p: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <ApiIcon color="primary" />
-              <Typography variant="h6">
-                API Connection Tester
-              </Typography>
-            </Box>
-            <Button
-              variant="outlined"
-              onClick={() => setShowApiTester(!showApiTester)}
-              startIcon={<ApiIcon />}
-            >
-              {showApiTester ? 'Hide Tester' : 'Show API Tester'}
-            </Button>
-          </Box>
-          
-          <Collapse in={showApiTester}>
-            <ApiTest />
-          </Collapse>
-        </Paper>
-      </Box>
+      {/* API Tester Section - Removed for production */}
     </Box>
   );
 };

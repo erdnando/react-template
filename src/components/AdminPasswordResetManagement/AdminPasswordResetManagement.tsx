@@ -10,7 +10,7 @@ const AdminPasswordResetManagement: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [emailToReset, setEmailToReset] = useState<string>('');
   const [emailSuggestions, setEmailSuggestions] = useState<string[]>([]);
-  const [loadingSuggestions, setLoadingSuggestions] = useState<boolean>(false);
+  // loadingSuggestions state removed as it was not used in render
   const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   
@@ -21,12 +21,12 @@ const AdminPasswordResetManagement: React.FC = () => {
       setError(null);
       const response = await utilsService.getPasswordResetStats();
       
-      console.log('Component - Fetch stats response:', response);
+
       
       if (response && response.success === true) {
         // Always set the stats if the response is successful, even if data has empty arrays
         setResetStats(response.data);
-        console.log('Stats set successfully:', response.data);
+
       } else {
         console.error('Response not successful:', response);
         setError(response?.message || 'Failed to fetch password reset statistics');
@@ -48,9 +48,9 @@ const AdminPasswordResetManagement: React.FC = () => {
     
     try {
       setIsProcessing(true);
-      console.log('Resetting attempts for user:', email);
+
       const response = await utilsService.resetPasswordAttempts({ email: email.trim() });
-      console.log('Reset attempts response:', response);
+
       
       if (response && response.success) {
         // Safe access to response.data with fallbacks
@@ -82,9 +82,9 @@ const AdminPasswordResetManagement: React.FC = () => {
   const cleanupExpiredTokens = async () => {
     try {
       setIsProcessing(true);
-      console.log('Cleaning up expired tokens...');
+
       const response = await utilsService.cleanupExpiredTokens();
-      console.log('Cleanup response:', response);
+
       
       if (response && response.success) {
         // Safe access to response.data with fallbacks
@@ -118,46 +118,37 @@ const AdminPasswordResetManagement: React.FC = () => {
       return;
     }
     
-    setLoadingSuggestions(true);
+    // Fetching email suggestions
     
     try {
-      console.log('Fetching email suggestions for:', partialEmail);
+
       const response = await utilsService.searchUsersByEmail(partialEmail);
       
       if (response && response.success && response.data && response.data.users) {
-        console.log('Email suggestions received:', response.data.users);
+
         setEmailSuggestions(response.data.users);
       } else {
-        console.log('No users found or API error:', response?.message);
+
         setEmailSuggestions([]);
       }
     } catch (err) {
       console.error('Error fetching email suggestions:', err);
       setEmailSuggestions([]);
     } finally {
-      setLoadingSuggestions(false);
+      // Suggestions fetching completed
     }
   }, []); // Empty dependency array since it doesn't depend on any state or props
 
   // Handle user selection from autocomplete
-  const handleUserSelection = useCallback((selectedEmail: string) => {
-    console.log('User selected:', selectedEmail);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleUserSelection = useCallback((_selectedEmail: string) => {
+
     setEmailSuggestions([]); // Clear suggestions when user is selected
   }, []);
   
   // Load stats when component mounts
   // Debug: Log state changes
-  useEffect(() => {
-    console.log('Debug - Current state:', {
-      resetStats,
-      loading,
-      error,
-      isProcessing,
-      emailToReset,
-      emailSuggestions,
-      loadingSuggestions
-    });
-  }, [resetStats, loading, error, isProcessing, emailToReset, emailSuggestions, loadingSuggestions]);
+  // Debug useEffect removed for production
 
   useEffect(() => {
     // Reset error state and fetch stats

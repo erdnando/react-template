@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { Box, Typography, Paper, Checkbox, Button, Divider, TextField, List, ListItem, ListItemText, InputAdornment, Chip, Tooltip, Snackbar, useMediaQuery } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import EditIcon from '@mui/icons-material/Edit';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 
@@ -16,11 +15,10 @@ const PermissionsManagementMockup: React.FC = () => {
   // const roleList = useMemo(() => [
   //   "Administrador", "Analista", "Reportes", "Soporte", "Invitado"
   // ], []);
-  // Permisos posibles sobre cada rol
-  const rolePermissionTypes = ["Admin", "Edición", "Viewer"] as const;
+  // Permisos posibles sobre cada rol (solo Edición y Viewer)
+  const rolePermissionTypes = ["Edición", "Viewer"] as const;
   type PermissionType = typeof rolePermissionTypes[number];
   const rolePermissionIcons: Record<PermissionType, JSX.Element> = {
-    Admin: <Tooltip title="Acceso total"><CheckCircleIcon color="error" fontSize="small" /></Tooltip>,
     "Edición": <Tooltip title="Puede editar"><EditIcon color="primary" fontSize="small" /></Tooltip>,
     Viewer: <Tooltip title="Solo lectura"><VisibilityIcon color="success" fontSize="small" /></Tooltip>,
   };
@@ -203,7 +201,7 @@ const PermissionsManagementMockup: React.FC = () => {
                   {Object.entries(userModulePermissions[activeUser] || {})
                     .filter(([, v]) => v.enabled)
                     .map(([mod, v]) => (
-                      <Chip key={mod} label={`${mod} (${v.type})`} color={v.type === 'Admin' ? 'error' : v.type === 'Edición' ? 'primary' : 'success'} size="small" icon={rolePermissionIcons[v.type as 'Admin' | 'Edición' | 'Viewer']} />
+                      <Chip key={mod} label={`${mod} (${v.type})`} color={v.type === 'Edición' ? 'primary' : 'success'} size="small" icon={rolePermissionIcons[v.type as 'Edición' | 'Viewer']} />
                     ))}
                   {Object.values(userModulePermissions[activeUser] || {}).filter(v => v.enabled).length === 0 && (
                     <Chip label="Sin permisos asignados" size="small" />
@@ -314,13 +312,13 @@ const PermissionsManagementMockup: React.FC = () => {
                                 const isSelected = perm.type === type && perm.enabled;
                                 let chipColor: string | undefined = undefined;
                                 if (isSelected) {
-                                  chipColor = type === 'Admin' ? '#f44336' : type === 'Edición' ? '#1976d2' : '#2e7d32';
+                                  chipColor = type === 'Edición' ? '#1976d2' : '#2e7d32';
                                 }
                                 // Even lighter style for unselected but enabled permissions
-                                const vividColor = type === 'Admin' ? '#fff5f5' : type === 'Edición' ? '#f5fafd' : '#f5fcf7';
-                                const vividText = type === 'Admin' ? '#b71c1c' : type === 'Edición' ? '#1976d2' : '#2e7d32';
+                                const vividColor = type === 'Edición' ? '#f5fafd' : '#f5fcf7';
+                                const vividText = type === 'Edición' ? '#1976d2' : '#2e7d32';
                                 return (
-                                  <Tooltip key={type} title={type === 'Admin' ? 'Acceso total' : type === 'Edición' ? 'Puede editar' : 'Solo lectura'}>
+                                  <Tooltip key={type} title={type === 'Edición' ? 'Puede editar' : 'Solo lectura'}>
                                     <Box
                                       sx={{
                                         display: 'flex',

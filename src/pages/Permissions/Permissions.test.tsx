@@ -19,7 +19,7 @@ jest.mock('../../hooks/usePermissionsApi', () => ({
         status: 'active',
         roleId: 1,
         isActive: true,
-        role: 'Administrador',
+        role: 'admin', // changed from 'Administrador' to 'admin'
         avatar: null,
         createdAt: '2023-01-01',
         updatedAt: '2023-01-01',
@@ -36,7 +36,7 @@ jest.mock('../../hooks/usePermissionsApi', () => ({
         status: 'active',
         roleId: 1,
         isActive: true,
-        role: 'Administrador',
+        role: 'admin', // changed from 'Administrador' to 'admin'
         avatar: null,
         createdAt: '2023-01-01',
         updatedAt: '2023-01-01',
@@ -53,7 +53,7 @@ jest.mock('../../hooks/usePermissionsApi', () => ({
         status: 'active',
         roleId: 2,
         isActive: true,
-        role: 'Analista',
+        role: 'user', // changed from 'Analista' to 'user'
         avatar: null,
         createdAt: '2023-01-01',
         updatedAt: '2023-01-01',
@@ -70,7 +70,7 @@ jest.mock('../../hooks/usePermissionsApi', () => ({
         status: 'active',
         roleId: 2,
         isActive: true,
-        role: 'Analista',
+        role: 'user', // changed from 'Analista' to 'user'
         avatar: null,
         createdAt: '2023-01-01',
         updatedAt: '2023-01-01',
@@ -87,7 +87,7 @@ jest.mock('../../hooks/usePermissionsApi', () => ({
         status: 'active',
         roleId: 2,
         isActive: true,
-        role: 'Analista',
+        role: 'user', // changed from 'Analista' to 'user'
         avatar: null,
         createdAt: '2023-01-01',
         updatedAt: '2023-01-01',
@@ -127,7 +127,7 @@ const mockStore = configureStore({
   preloadedState: {
     auth: {
       isAuthenticated: true,
-      user: { id: '1', username: 'Test User', email: 'test@example.com' },
+      user: { id: '1', username: 'Test User', email: 'test@example.com', role: 'admin' },
       loading: false,
       error: null,
     },

@@ -9,41 +9,57 @@ import {
   deleteTaskAsync
 } from '../../store/slices/tasksSlice';
 import {
+  Assignment as AssignmentIcon,
+  CheckCircleOutline as CheckCircleOutlineIcon,
+  PendingOutlined as PendingOutlinedIcon,
+  PriorityHigh as PriorityHighIcon,
+} from '@mui/icons-material';
+import {
   Box,
-  Paper,
   Typography,
   TextField,
   Button,
   Select,
   MenuItem,
   Stack,
-  Card,
-  CardContent,
-  CardActions,
-  IconButton,
   Snackbar,
   Alert,
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogContentText,
   DialogActions,
   SelectChangeEvent,
   Chip,
-  Fab,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
+
+  FormControl,
+  InputLabel,
+  Card,
+  CardContent,
+  Avatar,
 } from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import AddIcon from '@mui/icons-material/Add';
 import { VALIDATION_LIMITS } from '../../utils/validationConstants';
+import { useUserPermissions } from '../../hooks/useUserPermissions';
+import { 
+  ModuleLayout, 
+  ModuleCard, 
+  SectionCard,
+  SearchField,
+  ActionButtons,
+  FormSection,
+  StatusChip,
+  ReadOnlyBanner,
+  ModuleHeader
+} from '../../components/ui';
 
 const Tasks: React.FC = () => {
   const { tasks, loading, error } = useSelector((state: RootState) => state.tasks);
   const dispatch: AppDispatch = useDispatch();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const userPermissions = useUserPermissions();
+  const canEdit = userPermissions['tasks']?.type === 'Edit';
 
   // UserId: for demo, use 1. Replace with real userId from auth if available.
   const userId = 1;
@@ -58,6 +74,7 @@ const Tasks: React.FC = () => {
     priority: 'medium',
   });
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Snackbar state
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
@@ -81,111 +98,78 @@ const Tasks: React.FC = () => {
     highPriority: tasks.filter(t => t.priority === 'high').length,
   };
 
-  const getPriorityColor = (priority: string): "primary" | "warning" | "error" => {
-    switch (priority) {
-      case 'high':
-        return 'error';
-      case 'medium':
-        return 'warning';
-      default:
-        return 'primary';
-    }
-  };
+  // Filtered tasks based on search
+  const filteredTasks = tasks.filter(task =>
+    task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    task.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-    
-    // Real-time validation
-    const newErrors = { ...errors };
-    const { name, value } = e.target;
-    
-    if (name === 'title') {
-      if (!value.trim()) {
-        newErrors.title = 'Title is required';
-      } else if (value.length > VALIDATION_LIMITS.TASK_TITLE_MAX) {
-        newErrors.title = `Title cannot exceed ${VALIDATION_LIMITS.TASK_TITLE_MAX} characters`;
-      } else {
-        // Check for duplicates
-        const duplicate = tasks.find(
-          t => t.title.trim().toLowerCase() === value.trim().toLowerCase() && t.id !== editingId
-        );
-        if (duplicate) {
-          newErrors.title = 'A task with this title already exists';
-        } else {
-          newErrors.title = '';
-        }
-      }
-    } else if (name === 'description') {
-      if (!value.trim()) {
-        newErrors.description = 'Description is required';
-      } else if (value.length > VALIDATION_LIMITS.TASK_DESCRIPTION_MAX) {
-        newErrors.description = `Description cannot exceed ${VALIDATION_LIMITS.TASK_DESCRIPTION_MAX} characters`;
-      } else {
-        newErrors.description = '';
-      }
-    }
-    
-    setErrors(newErrors);
-  };
-
-  const handleSelectChange = (e: SelectChangeEvent) => {
-    setForm({ ...form, [e.target.name as string]: e.target.value as string });
-  };
-
-  // Validaciones avanzadas
-  const validate = () => {
-    const newErrors: typeof errors = {};
+  const validateForm = () => {
+    const newErrors: { title?: string; description?: string } = {};
     
     if (!form.title.trim()) {
-      newErrors.title = 'Title is required';
+      newErrors.title = 'El título es requerido';
     } else if (form.title.length > VALIDATION_LIMITS.TASK_TITLE_MAX) {
-      newErrors.title = `Title cannot exceed ${VALIDATION_LIMITS.TASK_TITLE_MAX} characters`;
-    } else {
-      // Check for duplicates
-      const duplicate = tasks.find(
-        t => t.title.trim().toLowerCase() === form.title.trim().toLowerCase() && t.id !== editingId
-      );
-      if (duplicate) {
-        newErrors.title = 'A task with this title already exists';
-      }
+      newErrors.title = `El título no puede exceder ${VALIDATION_LIMITS.TASK_TITLE_MAX} caracteres`;
     }
     
     if (!form.description.trim()) {
-      newErrors.description = 'Description is required';
+      newErrors.description = 'La descripción es requerida';
     } else if (form.description.length > VALIDATION_LIMITS.TASK_DESCRIPTION_MAX) {
-      newErrors.description = `Description cannot exceed ${VALIDATION_LIMITS.TASK_DESCRIPTION_MAX} characters`;
+      newErrors.description = `La descripción no puede exceder ${VALIDATION_LIMITS.TASK_DESCRIPTION_MAX} caracteres`;
     }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
-
-    if (editingId !== null) {
-      await dispatch(updateTaskAsync({
-        id: editingId,
-        data: {
-          title: form.title,
-          description: form.description,
-          completed: false, // Optionally allow editing completed
-          priority: form.priority as 'low' | 'medium' | 'high',
-        },
-      }));
-      setSnackbar({ open: true, message: 'Task updated!', severity: 'success' });
-      setEditingId(null);
-    } else {
-      await dispatch(createTaskAsync({
-        title: form.title,
-        description: form.description,
-        priority: form.priority,
-        userId: userId,
-      }));
-      setSnackbar({ open: true, message: 'Task added!', severity: 'success' });
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+    
+    // Clear error for this field if it exists
+    if (errors[e.target.name as keyof typeof errors]) {
+      setErrors({ ...errors, [e.target.name]: undefined });
     }
+  };
+
+  const handleSelectChange = (e: SelectChangeEvent) => {
+    setForm({ ...form, [e.target.name as string]: e.target.value });
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) return;
+
+    try {
+      const taskData = {
+        ...form,
+        userId,
+        completed: false,
+      };
+
+      if (editingId) {
+        await dispatch(updateTaskAsync({
+          id: editingId,
+          data: { ...taskData, completed: tasks.find(t => t.id === editingId)?.completed || false }
+        })).unwrap();
+        setSnackbar({ open: true, message: 'Tarea actualizada correctamente', severity: 'success' });
+      } else {
+        await dispatch(createTaskAsync(taskData)).unwrap();
+        setSnackbar({ open: true, message: 'Tarea creada correctamente', severity: 'success' });
+      }
+      
+      resetForm();
+    } catch (err) {
+      setSnackbar({ 
+        open: true, 
+        message: editingId ? 'Error al actualizar la tarea' : 'Error al crear la tarea', 
+        severity: 'error' 
+      });
+    }
+  };
+
+  const resetForm = () => {
     setForm({ title: '', description: '', priority: 'medium' });
+    setEditingId(null);
     setErrors({});
   };
 
@@ -199,19 +183,9 @@ const Tasks: React.FC = () => {
     setErrors({});
   };
 
-  // Diálogo de confirmación
   const handleDeleteClick = (id: number) => {
     setTaskToDelete(id);
     setDialogOpen(true);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (taskToDelete !== null) {
-      await dispatch(deleteTaskAsync(taskToDelete));
-      setSnackbar({ open: true, message: 'Task deleted!', severity: 'success' });
-    }
-    setDialogOpen(false);
-    setTaskToDelete(null);
   };
 
   const handleDeleteCancel = () => {
@@ -219,260 +193,389 @@ const Tasks: React.FC = () => {
     setTaskToDelete(null);
   };
 
-  // Loading and error UI
-  if (loading) {
+  const handleDeleteConfirm = async () => {
+    if (taskToDelete !== null) {
+      try {
+        await dispatch(deleteTaskAsync(taskToDelete)).unwrap();
+        setSnackbar({ open: true, message: 'Tarea eliminada correctamente', severity: 'success' });
+        handleDeleteCancel();
+      } catch (err) {
+        setSnackbar({ open: true, message: 'Error al eliminar la tarea', severity: 'error' });
+      }
+    }
+  };
+
+  const handleToggleComplete = async (task: Task) => {
+    try {
+      await dispatch(updateTaskAsync({
+        id: task.id,
+        data: { ...task, completed: !task.completed }
+      })).unwrap();
+      setSnackbar({ 
+        open: true, 
+        message: task.completed ? 'Tarea marcada como pendiente' : 'Tarea marcada como completada', 
+        severity: 'success' 
+      });
+    } catch (err) {
+      setSnackbar({ open: true, message: 'Error al actualizar el estado de la tarea', severity: 'error' });
+    }
+  };
+
+  if (loading && tasks.length === 0) {
     return (
-      <Box sx={{ p: { xs: 2, sm: 3 } }}>
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '40vh' }}>
-          <Typography variant="h6">Loading tasks...</Typography>
+      <ModuleLayout>
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+          <Typography>Cargando tareas...</Typography>
         </Box>
-      </Box>
+      </ModuleLayout>
     );
   }
+
   if (error) {
     return (
-      <Box sx={{ p: { xs: 2, sm: 3 } }}>
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '40vh' }}>
-          <Alert severity="error">{error}</Alert>
+      <ModuleLayout>
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+          <Alert severity="error">Error al cargar las tareas: {error}</Alert>
         </Box>
-      </Box>
+      </ModuleLayout>
     );
   }
 
   return (
-    <Box sx={{ p: { xs: 2, sm: 3 } }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h5" component="h1" gutterBottom>
-          Task Management
+    <ModuleLayout>
+      {/* Título y subtítulo usando el componente ModuleHeader */}
+      <ModuleHeader
+        title="Gestión de Tareas"
+        subtitle="Administra tus tareas y revisa su estado"
+      />
+      
+      {/* Indicador de modo Solo Lectura - Banner de alerta de ancho completo */}
+      {!canEdit && <ReadOnlyBanner />}
+      
+      {/* Estadísticas - Diseño Dashboard */}
+      <Box sx={{ mb: 4, mt: 2, width: '100%' }}>
+        <Typography 
+          variant="h6" 
+          sx={{ 
+            mb: 2, 
+            fontWeight: 600, 
+            color: 'text.primary',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1
+          }}
+        >
+          <Box 
+            component="span" 
+            sx={{ 
+              width: 4, 
+              height: 20, 
+              bgcolor: 'primary.main', 
+              display: 'inline-block',
+              borderRadius: 1,
+              mr: 1
+            }} 
+          />
+          Estadísticas de Tareas
         </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Create, manage and track your tasks efficiently
-        </Typography>
+        
+        {/* Dashboard Style Cards */}
+        <Box 
+          sx={{ 
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: 'repeat(2, 1fr)',
+              sm: 'repeat(2, 1fr)',
+              md: 'repeat(4, 1fr)'
+            },
+            gap: 3,
+            mb: 4
+          }}
+        >
+          {/* Total Tasks Card */}
+          <Card 
+            sx={{ 
+              height: '100%',
+              cursor: 'pointer',
+              transition: 'transform 0.2s, box-shadow 0.2s',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: 4,
+              }
+            }}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                <Avatar sx={{ bgcolor: 'primary.main', mr: 1.5, width: 36, height: 36 }}>
+                  <AssignmentIcon sx={{ fontSize: 20 }} />
+                </Avatar>
+                <Box>
+                  <Typography variant="h5" component="div" sx={{ fontSize: '1.25rem' }}>
+                    {taskStats.total}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem' }}>
+                    Total Tareas
+                  </Typography>
+                </Box>
+              </Box>
+              <Chip 
+                label={taskStats.total > 10 ? "+10 tareas" : taskStats.total === 0 ? "Sin tareas" : `${taskStats.total} tareas`} 
+                color="primary" 
+                size="small"
+                sx={{ mt: 1 }}
+              />
+            </CardContent>
+          </Card>
+          
+          {/* Completed Tasks Card */}
+          <Card 
+            sx={{ 
+              height: '100%',
+              cursor: 'pointer',
+              transition: 'transform 0.2s, box-shadow 0.2s',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: 4,
+              }
+            }}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                <Avatar sx={{ bgcolor: 'success.main', mr: 1.5, width: 36, height: 36 }}>
+                  <CheckCircleOutlineIcon sx={{ fontSize: 20 }} />
+                </Avatar>
+                <Box>
+                  <Typography variant="h5" component="div" sx={{ fontSize: '1.25rem' }}>
+                    {taskStats.completed}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem' }}>
+                    Completadas
+                  </Typography>
+                </Box>
+              </Box>
+              <Chip 
+                label={`${Math.round((taskStats.completed / (taskStats.total || 1)) * 100)}%`} 
+                color="success" 
+                size="small"
+                sx={{ mt: 1 }}
+              />
+            </CardContent>
+          </Card>
+          
+          {/* Pending Tasks Card */}
+          <Card 
+            sx={{ 
+              height: '100%',
+              cursor: 'pointer',
+              transition: 'transform 0.2s, box-shadow 0.2s',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: 4,
+              }
+            }}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                <Avatar sx={{ bgcolor: 'warning.main', mr: 1.5, width: 36, height: 36 }}>
+                  <PendingOutlinedIcon sx={{ fontSize: 20 }} />
+                </Avatar>
+                <Box>
+                  <Typography variant="h5" component="div" sx={{ fontSize: '1.25rem' }}>
+                    {taskStats.pending}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem' }}>
+                    Pendientes
+                  </Typography>
+                </Box>
+              </Box>
+              <Chip 
+                label={`${Math.round((taskStats.pending / (taskStats.total || 1)) * 100)}%`} 
+                color="warning" 
+                size="small"
+                sx={{ mt: 1 }}
+              />
+            </CardContent>
+          </Card>
+          
+          {/* High Priority Tasks Card */}
+          <Card 
+            sx={{ 
+              height: '100%',
+              cursor: 'pointer',
+              transition: 'transform 0.2s, box-shadow 0.2s',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: 4,
+              }
+            }}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                <Avatar sx={{ bgcolor: 'error.main', mr: 1.5, width: 36, height: 36 }}>
+                  <PriorityHighIcon sx={{ fontSize: 20 }} />
+                </Avatar>
+                <Box>
+                  <Typography variant="h5" component="div" sx={{ fontSize: '1.25rem' }}>
+                    {taskStats.highPriority}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem' }}>
+                    Alta Prioridad
+                  </Typography>
+                </Box>
+              </Box>
+              <Chip 
+                label={taskStats.highPriority > 0 ? "¡Atención requerida!" : "Sin urgencias"} 
+                color="error" 
+                size="small"
+                sx={{ mt: 1 }}
+              />
+            </CardContent>
+          </Card>
+        </Box>
       </Box>
 
-      {/* Stats Cards */}
-      <Box 
-        sx={{ 
-          display: 'grid', 
-          gridTemplateColumns: { 
-            xs: 'repeat(2, 1fr)', 
-            sm: 'repeat(2, 1fr)', 
-            md: 'repeat(4, 1fr)' 
-          }, 
-          gap: { xs: 1.5, md: 2 }, 
-          mb: 3 
-        }}
-      >
-        <Card>
-          <CardContent sx={{ py: 1.5 }}>
-            <Typography color="textSecondary" gutterBottom sx={{ fontSize: '0.8125rem' }}>
-              Total Tasks
-            </Typography>
-            <Typography variant="h5" sx={{ fontSize: '1.5rem' }}>
-              {taskStats.total}
-            </Typography>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent sx={{ py: 1.5 }}>
-            <Typography color="textSecondary" gutterBottom sx={{ fontSize: '0.8125rem' }}>
-              Completed
-            </Typography>
-            <Typography variant="h5" color="success.main" sx={{ fontSize: '1.5rem' }}>
-              {taskStats.completed}
-            </Typography>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent sx={{ py: 1.5 }}>
-            <Typography color="textSecondary" gutterBottom sx={{ fontSize: '0.8125rem' }}>
-              Pending
-            </Typography>
-            <Typography variant="h5" color="warning.main" sx={{ fontSize: '1.5rem' }}>
-              {taskStats.pending}
-            </Typography>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent sx={{ py: 1.5 }}>
-            <Typography color="textSecondary" gutterBottom sx={{ fontSize: '0.8125rem' }}>
-              High Priority
-            </Typography>
-            <Typography variant="h5" color="error.main" sx={{ fontSize: '1.5rem' }}>
-              {taskStats.highPriority}
-            </Typography>
-          </CardContent>
-        </Card>
-      </Box>
-
-      {/* Task Form */}
-      <Paper sx={{ p: { xs: 1, md: 1.5 }, mb: 3 }}>
-        <Typography variant="h6" gutterBottom sx={{ fontSize: '1.1rem', fontWeight: 600 }}>
-          {editingId ? 'Edit Task' : 'Add New Task'}
-        </Typography>
-        <form onSubmit={handleSubmit}>
-          <Stack spacing={2}>
-            <Box sx={{ 
-              display: 'flex', 
-              flexDirection: { xs: 'column', md: 'row' },
-              gap: 2
-            }}>
-              <TextField
-                name="title"
-                label="Title"
-                value={form.title}
-                onChange={handleInputChange}
-                required
-                size="small"
-                sx={{ flex: 1 }}
-                error={!!errors.title}
-                helperText={errors.title || `Maximum ${VALIDATION_LIMITS.TASK_TITLE_MAX} characters`}
-                inputProps={{ maxLength: VALIDATION_LIMITS.TASK_TITLE_MAX }}
-              />
-              <TextField
-                name="description"
-                label="Description"
-                value={form.description}
-                onChange={handleInputChange}
-                required
-                size="small"
-                sx={{ flex: 2 }}
-                error={!!errors.description}
-                helperText={errors.description || `Maximum ${VALIDATION_LIMITS.TASK_DESCRIPTION_MAX} characters`}
-                inputProps={{ maxLength: VALIDATION_LIMITS.TASK_DESCRIPTION_MAX }}
-                multiline
-                maxRows={3}
-              />
-              <Select
-                name="priority"
-                value={form.priority}
-                onChange={handleSelectChange}
-                size="small"
-                sx={{ minWidth: { xs: '100%', md: 120 } }}
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: { xs: 2, sm: 3 }, width: '100%', mx: 0, px: { xs: 0.5, sm: 0 } }}>
+        {/* Formulario */}
+        <Box sx={{ width: { xs: '100%', md: '33.33%' } }}>
+          <ModuleCard 
+            title={editingId ? "Editar Tarea" : "Nueva Tarea"}
+          >
+            <FormSection title="Información de la Tarea">
+              <Box sx={{ mb: 2, width: '100%' }}>
+                <TextField
+                  name="title"
+                  label="Título"
+                  value={form.title}
+                  onChange={handleInputChange}
+                  error={!!errors.title}
+                  helperText={errors.title}
+                  fullWidth
+                  size="small"
+                  inputProps={{ maxLength: VALIDATION_LIMITS.TASK_TITLE_MAX }}
+                />
+              </Box>
+              <Box sx={{ mb: 2, width: '100%' }}>
+                <TextField
+                  name="description"
+                  label="Descripción"
+                  value={form.description}
+                  onChange={handleInputChange}
+                  error={!!errors.description}
+                  helperText={errors.description}
+                  fullWidth
+                  multiline
+                  rows={3}
+                  size="small"
+                  inputProps={{ maxLength: VALIDATION_LIMITS.TASK_DESCRIPTION_MAX }}
+                />
+              </Box>
+              <Box sx={{ mb: 2, width: '100%' }}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Prioridad</InputLabel>
+                  <Select
+                    name="priority"
+                    value={form.priority}
+                    onChange={handleSelectChange}
+                    label="Prioridad"
+                  >
+                    <MenuItem value="low">Baja</MenuItem>
+                    <MenuItem value="medium">Media</MenuItem>
+                    <MenuItem value="high">Alta</MenuItem>
+                  </Select>
+                </FormControl>
+              </Box>
+            </FormSection>
+            
+            <Stack direction="row" spacing={2} sx={{ mt: 3 }}>
+              <Button
+                variant="contained"
+                onClick={handleSubmit}
+                disabled={loading || !canEdit}
+                fullWidth
               >
-                <MenuItem value="low">Low</MenuItem>
-                <MenuItem value="medium">Medium</MenuItem>
-                <MenuItem value="high">High</MenuItem>
-              </Select>
-            </Box>
-            <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                {editingId ? 'Actualizar' : 'Crear'}
+              </Button>
               {editingId && (
                 <Button
                   variant="outlined"
-                  onClick={() => {
-                    setEditingId(null);
-                    setForm({ title: '', description: '', priority: 'medium' });
-                    setErrors({});
-                  }}
-                  size="small"
+                  onClick={resetForm}
+                  fullWidth
                 >
-                  Cancel
+                  Cancelar
                 </Button>
               )}
-              <Button
-                type="submit"
-                variant="contained"
-                size="small"
-              >
-                {editingId ? 'Update Task' : 'Add Task'}
-              </Button>
-            </Box>
-          </Stack>
-        </form>
-      </Paper>
+            </Stack>
+          </ModuleCard>
+        </Box>
 
-      {/* Tasks List - Desktop Cards */}
-      <Box sx={{ display: { xs: 'none', md: 'block' } }}>
-        <Stack spacing={1.5}>
-          {tasks.map((task: Task) => (
-            <Card key={task.id} variant="outlined">
-              <CardContent sx={{ pb: 1 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                  <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 600 }}>
-                    {task.title}
-                  </Typography>
-                  <Chip
-                    label={task.priority}
-                    color={getPriorityColor(task.priority)}
-                    size="small"
-                    sx={{ fontSize: '0.75rem' }}
+        {/* Lista de Tareas */}
+        <Box sx={{ width: { xs: '100%', md: '66.66%' } }}> {/* Asegurar ancho completo */}
+          <SectionCard 
+            title="Lista de Tareas"
+            action={
+              <SearchField
+                value={searchTerm}
+                onChange={setSearchTerm}
+                placeholder="Buscar tareas..."
+                sx={{ 
+                  minWidth: { xs: '100%', sm: 200, md: 250 }, 
+                  width: { xs: '100%', sm: 'auto' } 
+                }}
+              />
+            }
+            sx={{ width: '100%' }} /* Asegurar ancho completo */
+          >
+            {filteredTasks.length === 0 ? (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography color="text.secondary">
+                  {searchTerm ? 'No se encontraron tareas' : 'No hay tareas disponibles'}
+                </Typography>
+              </Box>
+            ) : (
+              <Stack spacing={2}>
+                {filteredTasks.map((task) => (
+                  <TaskCard 
+                    key={task.id}
+                    task={task}
+                    canEdit={canEdit}
+                    onEdit={() => handleEdit(task)}
+                    onDelete={() => handleDeleteClick(task.id)}
+                    onToggleComplete={() => handleToggleComplete(task)}
                   />
-                </Box>
-                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
-                  {task.description}
-                </Typography>
-              </CardContent>
-              <CardActions sx={{ px: 2, py: 1 }}>
-                <IconButton color="primary" onClick={() => handleEdit(task)} size="small">
-                  <EditIcon sx={{ fontSize: '1.1rem' }} />
-                </IconButton>
-                <IconButton color="error" onClick={() => handleDeleteClick(task.id)} size="small">
-                  <DeleteIcon sx={{ fontSize: '1.1rem' }} />
-                </IconButton>
-              </CardActions>
-            </Card>
-          ))}
-        </Stack>
+                ))}
+              </Stack>
+            )}
+          </SectionCard>
+        </Box>
       </Box>
 
-      {/* Tasks List - Mobile Cards */}
-      <Box sx={{ display: { xs: 'block', md: 'none' } }}>
-        {tasks.map((task: Task) => (
-          <Card key={task.id} sx={{ mb: 2 }}>
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: '0.95rem', flex: 1 }}>
-                  {task.title}
-                </Typography>
-                <Chip
-                  label={task.priority}
-                  color={getPriorityColor(task.priority)}
-                  size="small"
-                  sx={{ fontSize: '0.75rem', ml: 1 }}
-                />
-              </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem', mb: 2 }}>
-                {task.description}
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
-                <IconButton 
-                  onClick={() => handleEdit(task)}
-                  color="primary"
-                  size="small"
-                >
-                  <EditIcon sx={{ fontSize: '1.1rem' }} />
-                </IconButton>
-                <IconButton 
-                  onClick={() => handleDeleteClick(task.id)}
-                  color="error" 
-                  size="small"
-                >
-                  <DeleteIcon sx={{ fontSize: '1.1rem' }} />
-                </IconButton>
-              </Box>
-            </CardContent>
-          </Card>
-        ))}
-      </Box>
-
-      {/* Mobile FAB */}
-      <Fab
-        color="primary"
-        aria-label="add task"
-        sx={{
-          position: 'fixed',
-          bottom: 16,
-          right: 16,
-          display: { xs: 'flex', md: 'none' }
-        }}
-        onClick={() => {
-          setEditingId(null);
-          setForm({ title: '', description: '', priority: 'medium' });
-          setErrors({});
+      {/* Diálogo de Confirmación */}
+      <Dialog
+        open={dialogOpen}
+        onClose={handleDeleteCancel}
+        fullScreen={isMobile}
+        PaperProps={{
+          sx: {
+            m: { xs: 1, sm: 3 },
+            width: { xs: 'calc(100% - 16px)', sm: '100%' }
+          }
         }}
       >
-        <AddIcon />
-      </Fab>
+        <DialogTitle>Confirmar Eliminación</DialogTitle>
+        <DialogContent>
+          <Typography>
+            ¿Está seguro de que desea eliminar esta tarea? Esta acción no se puede deshacer.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} color="primary">
+            Cancelar
+          </Button>
+          <Button onClick={handleDeleteConfirm} color="error" autoFocus>
+            Eliminar
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Snackbar */}
       <Snackbar
@@ -488,35 +591,117 @@ const Tasks: React.FC = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
+    </ModuleLayout>
+  );
+};
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={dialogOpen}
-        onClose={handleDeleteCancel}
-        fullScreen={isMobile}
-        PaperProps={{
-          sx: {
-            m: { xs: 1, sm: 3 },
-            width: { xs: 'calc(100% - 16px)', sm: '100%' }
-          }
-        }}
-      >
-        <DialogTitle>Confirm Delete</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to delete this task? This action cannot be undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDeleteCancel} color="primary">
-            Cancel
+// Componente TaskCard reutilizable
+interface TaskCardProps {
+  task: Task;
+  canEdit: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+  onToggleComplete: () => void;
+}
+
+const TaskCard: React.FC<TaskCardProps> = ({ 
+  task, 
+  canEdit, 
+  onEdit, 
+  onDelete, 
+  onToggleComplete 
+}) => {
+  const getPriorityColor = (priority: string): "primary" | "warning" | "error" => {
+    switch (priority) {
+      case 'high':
+        return 'error';
+      case 'medium':
+        return 'warning';
+      default:
+        return 'primary';
+    }
+  };
+
+  const getPriorityLabel = (priority: string): string => {
+    switch (priority) {
+      case 'high':
+        return 'Alta';
+      case 'medium':
+        return 'Media';
+      default:
+        return 'Baja';
+    }
+  };
+
+  return (
+    <Card 
+      variant="outlined"
+      sx={{
+        '&:hover': {
+          boxShadow: 2,
+        },
+        opacity: task.completed ? 0.7 : 1,
+      }}
+    >
+      <CardContent>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+          <Typography 
+            variant="subtitle1" 
+            sx={{ 
+              fontWeight: 600, 
+              fontSize: '0.95rem', 
+              flex: 1,
+              textDecoration: task.completed ? 'line-through' : 'none'
+            }}
+          >
+            {task.title}
+          </Typography>
+          <StatusChip 
+            status={task.completed ? 'completada' : 'pendiente'}
+            colorMap={{
+              completada: 'success',
+              pendiente: 'warning'
+            }}
+          />
+          <Chip
+            label={getPriorityLabel(task.priority)}
+            color={getPriorityColor(task.priority)}
+            size="small"
+            sx={{ fontSize: '0.75rem', ml: 1 }}
+          />
+        </Box>
+        
+        <Typography 
+          variant="body2" 
+          color="text.secondary" 
+          sx={{ fontSize: '0.8125rem', mb: 2 }}
+        >
+          {task.description}
+        </Typography>
+        
+        <ActionButtons
+          onEdit={onEdit}
+          onDelete={onDelete}
+          canEdit={canEdit}
+          canDelete={canEdit}
+          editLabel="Editar tarea"
+          deleteLabel="Eliminar tarea"
+        />
+        
+        <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid', borderTopColor: 'divider' }}>
+          <Button
+            size="small"
+            variant={task.completed ? "outlined" : "contained"}
+            color={task.completed ? "secondary" : "success"}
+            onClick={onToggleComplete}
+            disabled={!canEdit}
+            fullWidth
+          >
+            {task.completed ? 'Marcar como Pendiente' : 'Marcar como Completada'}
           </Button>
-          <Button onClick={handleDeleteConfirm} color="error" autoFocus>
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+        </Box>
+      </CardContent>
+    </Card>
   );
 };
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Paper,
@@ -31,6 +31,7 @@ import {
   Close as CloseIcon,
 } from '@mui/icons-material';
 import { usePermissionsApi } from '../../hooks';
+import { ReadOnlyBanner, ModuleHeader } from '../../components/ui';
 import { VALIDATION_LIMITS } from '../../utils/validationConstants';
 
 interface RoleManagementProps {
@@ -38,13 +39,15 @@ interface RoleManagementProps {
   onClose?: () => void;
   showStats?: boolean;
   title?: string;
+  canEdit?: boolean;
 }
 
 const RoleManagement: React.FC<RoleManagementProps> = ({ 
   isModal = false, 
   onClose, 
   showStats = true,
-  title = "Role Management"
+  title = "Role Management",
+  canEdit = true
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [openDialog, setOpenDialog] = useState(false);
@@ -65,10 +68,24 @@ const RoleManagement: React.FC<RoleManagementProps> = ({
     error,
     createRole,
     updateRole,
-    deleteRole
+    deleteRole,
+    loadData
   } = usePermissionsApi();
 
-  const filteredRoles = roles.filter(role =>
+  useEffect(() => {
+    loadData && loadData();
+  }, []);
+
+  // Ordenar roles: 'Sin asignar' siempre al final
+  const sortedRoles = [...roles].sort((a, b) => {
+    const isAUnassigned = a.name.trim().toLowerCase() === 'sin asignar' || a.name.trim().toLowerCase() === 'unassigned';
+    const isBUnassigned = b.name.trim().toLowerCase() === 'sin asignar' || b.name.trim().toLowerCase() === 'unassigned';
+    if (isAUnassigned && !isBUnassigned) return 1;
+    if (!isAUnassigned && isBUnassigned) return -1;
+    return a.name.localeCompare(b.name, 'es', { sensitivity: 'base' });
+  });
+
+  const filteredRoles = sortedRoles.filter(role =>
     role.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -151,7 +168,7 @@ const RoleManagement: React.FC<RoleManagementProps> = ({
         await updateRole(selectedRole.id, { name: roleName });
         setSnackbar('Rol actualizado exitosamente');
       } else {
-        await createRole({ name: roleName });
+        await createRole({ name: roleName, isSystemRole: false });
         setSnackbar('Rol creado exitosamente');
       }
       handleCloseDialog();
@@ -214,15 +231,14 @@ const RoleManagement: React.FC<RoleManagementProps> = ({
 
   const content = (
     <>
-      {/* Header */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h5" component="h1" gutterBottom>
-          {title}
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Manage and monitor all roles in your application
-        </Typography>
-      </Box>
+      {/* Header con ModuleHeader */}
+      <ModuleHeader
+        title={title}
+        subtitle="Manage and monitor all roles in your application"
+      />
+      
+      {/* Read Only Banner */}
+      {!canEdit && <ReadOnlyBanner />}
 
       {/* Stats Cards */}
       {showStats && (
@@ -311,6 +327,7 @@ const RoleManagement: React.FC<RoleManagementProps> = ({
           startIcon={<AddIcon />}
           onClick={handleAdd}
           sx={{ display: { xs: 'none', sm: 'flex' } }}
+          disabled={!canEdit}
         >
           ADD ROLE
         </Button>
@@ -321,11 +338,11 @@ const RoleManagement: React.FC<RoleManagementProps> = ({
         <TableContainer component={Paper}>
           <Table size="small">
             <TableHead>
-              <TableRow>
-                <TableCell>Role Name</TableCell>
-                <TableCell>Assigned Users</TableCell>
-                <TableCell>Type</TableCell>
-                <TableCell align="center">Actions</TableCell>
+              <TableRow sx={{ bgcolor: 'grey.50' }}>
+                <TableCell sx={{ fontWeight: 'bold', color: 'text.primary' }}>Role Name</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', color: 'text.primary' }}>Assigned Users</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', color: 'text.primary' }}>Type</TableCell>
+                <TableCell align="center" sx={{ fontWeight: 'bold', color: 'text.primary' }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
